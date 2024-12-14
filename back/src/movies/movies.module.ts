@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
-import { MoviesService } from './movies.service';
+import { MoviesServiceOracle } from './Services/movies.service.oracle';
 import {MoviesController} from "./movies.controller";
+import {ConfigService} from "@nestjs/config";
 
 @Module({
   controllers:[MoviesController],
-  providers: [MoviesService]
+  providers: [MoviesServiceOracle, ConfigService]
 })
 export class MoviesModule {}

@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MoviesController } from './movies/movies.controller';
 import { MoviesModule } from './movies/movies.module';
+import {MoviesServiceOracle} from "./movies/Services/movies.service.oracle";
 
 
 @Module({
@@ -21,8 +22,9 @@ import { MoviesModule } from './movies/movies.module';
         database: configService.get<string>('DATABASE_USER_ORACLE'),
         serviceName: configService.get<string>('SERVICE_NAME_ONLY_ORACLE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        autoLoadEntities: true,
-        synchronize: true,
+        // No entities are needed if you're not using ORM for auto-loading
+        autoLoadEntities: false,
+        synchronize: false, // Ensure synchronization is false, since you're using raw SQL
         options: {
           enableArithAbort: true,
           trustServerCertificate: true,
@@ -31,9 +33,8 @@ import { MoviesModule } from './movies/movies.module';
       inject: [ConfigService],
     }),
     MoviesModule,
-
   ],
   controllers: [AppController, MoviesController],
-  providers: [AppService],
+  providers: [AppService, MoviesServiceOracle],
 })
 export class AppModule {}

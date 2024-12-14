@@ -1,0 +1,94 @@
+/* movie-form.component.css */
+
+/* Set the background color for the form */
+.movie-form {
+  background-color: #111111; /* Dark background */
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 600px;
+  margin: 0 auto;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.6); /* Shadow for better contrast */
+}
+
+/* Title styling */
+.movie-form h2 {
+  color: #f1c40f; /* IMDb Yellow */
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+/* Form labels */
+.movie-form label {
+  color: #f1c40f; /* Yellow text for labels */
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+/* Input styling */
+.movie-form input[type="text"],
+.movie-form input[type="number"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border: 1px solid #555555; /* Border color to match dark theme */
+  background-color: #222222; /* Dark background for input fields */
+  color: #f1c40f; /* Yellow text in inputs */
+  font-size: 14px;
+  border-radius: 5px;
+}
+
+.movie-form input[type="text"]:focus,
+.movie-form input[type="number"]:focus {
+  outline: none;
+  border-color: #f1c40f; /* Yellow border on focus */
+}
+
+/* Button styling */
+.movie-form button {
+  background-color: #f1c40f; /* IMDb Yellow */
+  color: black;
+  padding: 12px 20px;
+  border: none;
+  font-size: 16px;
+  width: 100%;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.movie-form button:hover {
+  background-color: #d9a500; /* Slightly darker yellow on hover */
+}
+
+/* Style for required fields */
+.movie-form input[required] {
+  background-color: #333333; /* Darker background for required fields */
+}
+
+/* Add spacing between each form field */
+.movie-form div {
+  margin-bottom: 16px;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+  .movie-form {
+    padding: 15px;
+  }
+
+  .movie-form h2 {
+    font-size: 20px;
+  }
+
+  .movie-form label {
+    font-size: 12px;
+  }
+
+  .movie-form input[type="text"],
+  .movie-form input[type="number"],
+  .movie-form button {
+    font-size: 14px;
+  }
+}
