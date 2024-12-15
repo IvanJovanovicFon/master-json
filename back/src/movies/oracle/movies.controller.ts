@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body } from '@nestjs/common';
-import { MoviesServiceOracle } from './Services/movies.service.oracle';
+import { MoviesServiceOracle } from './movies.service.oracle';
 
 @Controller('movies')
 export class MoviesController {
