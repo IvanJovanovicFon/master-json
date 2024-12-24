@@ -3,9 +3,11 @@ import {AppController} from './app.controller';
 import {AppService} from './app.service';
 import {TypeOrmModule, TypeOrmModuleOptions} from '@nestjs/typeorm';
 import {ConfigModule, ConfigService} from '@nestjs/config';
-import {MoviesController} from './movies/oracle/movies.controller';
+import {MoviesController} from './movies/movies.controller';
 import {MoviesModule} from './movies/oracle/movies.module';
-import {MoviesServiceOracle} from "./movies/oracle/movies.service.oracle";
+import {OracleService} from "./movies/oracle/oracle.service";
+import { MssqlModule } from './movies/sqlServer/mssql.module';
+import { PostgresModule } from './movies/postgres/postgres.module';
 
 
 @Module({
@@ -72,10 +74,14 @@ import {MoviesServiceOracle} from "./movies/oracle/movies.service.oracle";
 
         MoviesModule,
 
+        MssqlModule,
+
+        PostgresModule,
+
     ],
 
     controllers: [AppController, MoviesController],
-    providers: [AppService, MoviesServiceOracle],
+    providers: [AppService, OracleService],
 })
 export class AppModule {
 }

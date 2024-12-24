@@ -1,15 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { OracleService } from './oracle.service';
+import { MssqlService } from './mssql.service';
 
-describe('MoviesService', () => {
-  let service: OracleService;
+describe('MssqlService', () => {
+  let service: MssqlService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [OracleService],
+      providers: [MssqlService],
     }).compile();
 
-    service = module.get<OracleService>(OracleService);
+    service = module.get<MssqlService>(MssqlService);
   });
 
   it('should be defined', () => {

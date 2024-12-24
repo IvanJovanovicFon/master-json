@@ -4,47 +4,56 @@
   <form (ngSubmit)="createMovie()">
     <div>
       <label for="name">Movie Name:</label>
-      <input type="text" id="name" [(ngModel)]="movie.name" name="f_name" required />
+      <input type="text" id="name" [(ngModel)]="movie.name" name="f_name" required/>
     </div>
 
     <div>
       <label for="genre">Genre:</label>
-      <input type="text" id="genre" [(ngModel)]="movie.genre" name="genre" required />
+      <input type="text" id="genre" [(ngModel)]="movie.genre" name="genre" required/>
     </div>
 
     <div>
       <label for="year">Year:</label>
-      <input type="number" id="year" [(ngModel)]="movie.year" name="year" required />
+      <input type="number" id="year" [(ngModel)]="movie.year" name="year" required/>
     </div>
 
     <div>
       <label for="director_f_name">Director First Name:</label>
-      <input type="text" id="director_f_name" [(ngModel)]="movie.director.f_name" name="director_f_name" required />
+      <input type="text" id="director_f_name" [(ngModel)]="movie.director.f_name" name="director_f_name" required/>
     </div>
 
     <div>
       <label for="director_l_name">Director Last Name:</label>
-      <input type="text" id="director_l_name" [(ngModel)]="movie.director.l_name" name="director_l_name" required />
+      <input type="text" id="director_l_name" [(ngModel)]="movie.director.l_name" name="director_l_name" required/>
     </div>
 
-    <div>
-      <label for="actor_f_name">Actor First Name:</label>
-      <input type="text" id="actor_f_name" [(ngModel)]="movie.actor[0].f_name" name="actor_f_name" required />
-    </div>
 
-    <div>
-      <label for="actor_l_name">Actor Last Name:</label>
-      <input type="text" id="actor_l_name" [(ngModel)]="movie.actor[0].l_name" name="actor_l_name" required />
-    </div>
+    <div *ngFor="let actor of movie.actor; let i = index">
+      <h3>Actor {{ i + 1 }}</h3>
+      <div>
+        <label>Actor First Name:</label>
+        <input type="text" [(ngModel)]="actor.f_name" name="actor_f_name_{{ i }}" required/>
+      </div>
 
-    <div>
-      <label for="actor_b_year">Actor Birth Year:</label>
-      <input type="number" id="actor_b_year" [(ngModel)]="movie.actor[0].b_year" name="actor_b_year" required />
-    </div>
+      <div>
+        <label>Actor Last Name:</label>
+        <input type="text" [(ngModel)]="actor.l_name" name="actor_l_name_{{ i }}" required/>
+      </div>
 
+      <div>
+        <label>Actor Birth Year:</label>
+        <input type="number" [(ngModel)]="actor.b_year" name="actor_b_year_{{ i }}" required/>
+      </div>
     <div>
-      <button type="submit">Create Movie</button>
+      <button type="button" (click)="addActor(actor)">Add Actor</button>
+      <button type="button" (click)="removeActor()">Remove Actor</button>
     </div>
+    </div>
+    //treba dodati svakog glumca
+
+      <div>
+        <button type="submit">Create Movie</button>
+      </div>
+
   </form>
 </div>
-

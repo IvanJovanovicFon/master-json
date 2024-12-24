@@ -1,15 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { OracleService } from './oracle.service';
+import { PostgresService } from './postgres.service';
 
-describe('MoviesService', () => {
-  let service: OracleService;
+describe('PostgresService', () => {
+  let service: PostgresService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [OracleService],
+      providers: [PostgresService],
     }).compile();
 
-    service = module.get<OracleService>(OracleService);
+    service = module.get<PostgresService>(PostgresService);
   });
 
   it('should be defined', () => {

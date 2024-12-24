@@ -1,8 +1,9 @@
-import {Component} from '@angular/core';
+import {Component, isStandalone} from '@angular/core';
 import {Movie} from '../model/movie';
-import {FormsModule} from '@angular/forms';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {CommonModule} from '@angular/common';
-import {MoviesService} from './movies.service'; // Import the Movie model
+import {MoviesService} from './movies.service';
+import {Actor} from '../model/actor';
 
 @Component({
   selector: 'app-movies',
@@ -10,36 +11,43 @@ import {MoviesService} from './movies.service'; // Import the Movie model
   styleUrls: ['./movies.component.scss'],
   imports: [
     FormsModule,
-    CommonModule
+    CommonModule,
+    ReactiveFormsModule,
+
   ],
   providers: [],
   standalone: true
 })
 export class MoviesComponent {
-  movie: Movie = new Movie(); // Initialize with an empty movie
-
+  movie: Movie = new Movie();
+  jsonTypes = [
+    {label: 'Oracle JSON', value: 'oracle_json'},
+    {label: 'Oracle BLOB', value: 'oracle_blob'},
+    {label: 'MSSQL JSON', value: 'mssql_json'},
+    {label: 'MSSQL VARCHAR', value: 'mssql_varchar'},
+    {label: 'Postgres JSON', value: 'postgres_json'},
+    {label: 'Postgres JSONB', value: 'postgres_jsonb'},
+  ];
+  jsonType = ""
+  actors: Actor[]=[];
+  protected readonly isStandalone = isStandalone;
   constructor(private movieService: MoviesService) {
   }
 
-  // Method to call the createMovie function from the service
   createMovie(): void {
-    this.movieService.createMovie(this.movie).subscribe({
-      next: (response) => {
-        console.log('Movie created successfully:', response);
-        alert('Movie created successfully!');
-       // this.resetForm(); // Reset the form after successful creation
-      },
-      error: (error) => {
-        console.error('Error creating movie:', error);
-        alert('Failed to create movie. Please try again.');
-      },
-      complete: () => {
-        console.log('Movie creation process completed');
-      },
-    });
+    this.movieService.createMovie(this.movie, this.jsonType);
   }
 
   resetForm(): void {
-    this.movie = new Movie(); // Reset to the default values
+    this.movie = new Movie();
+  }
+
+
+  addActor(actor:Actor) {
+    this.actors.push(actor);
+  }
+
+  removeActor() {
+    //izbaciti prosledjenog glumca
   }
 }
