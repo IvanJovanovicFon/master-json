@@ -1,15 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { MssqlService } from './mssql.service';
+import { SqlServerService } from './mssql.service';
 
 describe('MssqlService', () => {
-  let service: MssqlService;
+  let service: SqlServerService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [MssqlService],
+      providers: [SqlServerService],
     }).compile();
 
-    service = module.get<MssqlService>(MssqlService);
+    service = module.get<SqlServerService>(SqlServerService);
   });
 
   it('should be defined', () => {

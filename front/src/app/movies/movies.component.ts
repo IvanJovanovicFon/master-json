@@ -23,18 +23,21 @@ export class MoviesComponent {
   jsonTypes = [
     {label: 'Oracle JSON', value: 'oracle_json'},
     {label: 'Oracle BLOB', value: 'oracle_blob'},
-    {label: 'MSSQL JSON', value: 'mssql_json'},
     {label: 'MSSQL VARCHAR', value: 'mssql_varchar'},
     {label: 'Postgres JSON', value: 'postgres_json'},
     {label: 'Postgres JSONB', value: 'postgres_jsonb'},
   ];
+  selectedJsonType: string = '';
   jsonType = ""
-  actors: Actor[]=[];
+  selectedActors: Actor[] = [];
   protected readonly isStandalone = isStandalone;
+
   constructor(private movieService: MoviesService) {
   }
 
   createMovie(): void {
+    console.log(this.jsonType)
+    console.log(this.movie)
     this.movieService.createMovie(this.movie, this.jsonType);
   }
 
@@ -42,12 +45,11 @@ export class MoviesComponent {
     this.movie = new Movie();
   }
 
-
-  addActor(actor:Actor) {
-    this.actors.push(actor);
+  addActor(): void {
+    this.movie.actor.push(new Actor()); // Add a new actor
   }
 
-  removeActor() {
-    //izbaciti prosledjenog glumca
+  removeActor(index: number): void {
+    this.movie.actor.splice(index, 1); // Remove the actor at the given index
   }
 }

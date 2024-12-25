@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MssqlController } from './mssql.controller';
-import { MssqlService } from './mssql.service';
+import { SqlServerService } from './mssql.service';
 
 describe('MssqlController', () => {
   let controller: MssqlController;
@@ -8,7 +8,7 @@ describe('MssqlController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [MssqlController],
-      providers: [MssqlService],
+      providers: [SqlServerService],
     }).compile();
 
     controller = module.get<MssqlController>(MssqlController);
