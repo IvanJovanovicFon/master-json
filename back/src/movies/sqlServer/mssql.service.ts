@@ -6,29 +6,28 @@ import {Movie} from "../../Model/movie";
 @Injectable()
 export class SqlServerService {
   constructor(
-      @InjectDataSource('mssqlConnection') private readonly dataSource: DataSource, // Correct connection name
-  ) {
+      @InjectDataSource('mssqlConnection') private readonly dataSource: DataSource  ) {
   }
 
   async handleMovieData(jsonType: string, movieData: Movie): Promise<any> {
     try {
       if (jsonType === 'mssql_varchar') {
-        const query = `
-                    INSERT INTO MASTER (id, nvarcharcolumn)
-                    VALUES (1, $1)
+       const parameters =  JSON.stringify(movieData);
+               const query = `
+                    INSERT INTO [JSONMASTER].[dbo].[MASTER] (nvarcharcolumn)
+                    VALUES ('${parameters}')
                 `;
-        const parameters = [JSON.stringify(movieData)];
-        await this.dataSource.manager.query(query, parameters);
+        await this.dataSource.manager.query(query);
         return {message: 'Stored in MSSQL as NVARCHAR', data: movieData};
 
       } else if (jsonType === 'mssql_json') {
         const query = `
                     INSERT INTO MASTER (nvarcharcolumn)
-                    VALUES (:movieData)
+                    VALUES (${movieData})
                 `;
-        const parameters = [JSON.stringify(movieData)];
+        //const parameters = [JSON.stringify(movieData)];
 
-        await this.dataSource.manager.query(query, parameters);
+        await this.dataSource.manager.query(query);
         return {message: 'Stored in MSSQL as nebitno', data: movieData};
       }
 
