@@ -1,4 +1,4 @@
-import {Body, Controller, Post, HttpException, HttpStatus, Inject, forwardRef} from '@nestjs/common';
+import {Body, Controller, Post, HttpException, HttpStatus, Inject, forwardRef, Get, Param, Put} from '@nestjs/common';
 import {OracleService} from './oracle/oracle.service';
 import {SqlServerService} from './sqlServer/mssql.service'
 import {PostgresService} from './postgres/postgres.service';
@@ -11,6 +11,45 @@ export class MoviesController {
         private readonly sqlServerService: SqlServerService,
         private readonly postgresService: PostgresService,
     ) {
+    }
+
+    @Get('/:database/:id')
+    async getMovie(@Param('database') db: string, @Param('id') id: number) {
+
+        switch (db) {
+            case 'Oracle':
+                return await this.oracleService.readData(id);
+
+            case 'SQLServer':
+                return await this.sqlServerService.readData(id);
+
+            case 'PostgreSQL':
+                return await this.postgresService.readData(id);
+
+            default:
+                throw new HttpException(`Unsupported db: ${db}`, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Put('/:database/:id')
+    async updateMovie(
+        @Param('database') db: string,
+        @Param('id') id: number,
+        @Body() movieData: any,
+    ) {
+        switch (db) {
+            case 'oracle':
+                return await this.oracleService.updateMovieData(id,movieData);
+
+            case 'mssql':
+                return await this.sqlServerService.udateMovieData(id,movieData);
+
+            case 'postgres':
+                return await this.postgresService.updateMovieData(id,movieData);
+
+            default:
+                throw new HttpException(`Unsupported db: ${db}`, HttpStatus.BAD_REQUEST);
+        }
     }
 
     @Post()

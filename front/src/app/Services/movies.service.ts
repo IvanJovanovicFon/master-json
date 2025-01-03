@@ -13,6 +13,13 @@ export class MoviesService {
   constructor(private http: HttpClient) {
   }
 
+  getMovieById(database: string, movieId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/${database}/${movieId}`);
+  }
+
+  updateMovie(database: string, movieId: number, movieData: any): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/${database}/${movieId}`, movieData);
+  }
 
   createMovie(movie: Movie, jsonType: string) {
     console.log(123)
@@ -28,5 +35,4 @@ export class MoviesService {
       },
     });
   }
-
 }

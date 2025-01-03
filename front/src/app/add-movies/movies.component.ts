@@ -2,7 +2,7 @@ import {Component, isStandalone} from '@angular/core';
 import {Movie} from '../model/movie';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {CommonModule} from '@angular/common';
-import {MoviesService} from './movies.service';
+import {MoviesService} from '../Services/movies.service';
 import {Actor} from '../model/actor';
 
 @Component({

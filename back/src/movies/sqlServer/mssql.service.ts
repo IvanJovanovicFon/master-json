@@ -37,4 +37,35 @@ export class SqlServerService {
       throw error;
     }
   }
+
+    async udateMovieData(id: number, movieData: any) {
+        return Promise.resolve(undefined);
+    }
+
+    async readData(movieId: number): Promise<any> {
+        try {
+            const query = `SELECT nvarcharColumn FROM [JSONMASTER].[dbo].[MASTER] WHERE ID = ( ${movieId})`;
+            const result = await this.dataSource.manager.query(query);
+
+            if (result && result.length > 0) {
+                const movieData = result[0];
+
+                if (movieData.nvarcharColumn) {
+                    try {
+                        // Check if MOVIEJSON is a valid JSON string
+                        const parsedJson = JSON.parse(movieData.nvarcharColumn); // Parse the NVARCHAR column as JSON
+                        return { message: 'Movie data retrieved from NVARCHAR as JSON', data: parsedJson };
+                    } catch (error) {
+                        return { message: 'Invalid JSON in MOVIEJSON column', data: null };
+                    }
+                }
+            }
+
+            return { message: 'No movie data found', data: null };
+        } catch (error) {
+            console.log('Error retrieving movie data:', error);
+            throw error;
+        }
+    }
+
 }

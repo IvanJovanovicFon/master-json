@@ -40,4 +40,44 @@ console.log(parameters)
       throw error;
     }
   }
+
+    async updateMovieData(id: number, movieData: any) {
+        return Promise.resolve(undefined);
+    }
+
+    async readData(movieId: number): Promise<any> {
+        try {
+            // Adjusted query for PostgreSQL to retrieve JSON or JSONB columns
+            const query = `
+      SELECT json, jsonb
+      FROM master
+      WHERE ID = $1
+    `;
+            const parameters = [movieId]; // Parameterized query for safety
+
+            // Execute query
+            const result = await this.dataSource.manager.query(query, parameters);
+
+            if (result && result.length > 0) {
+                const movieData = result[0];
+
+                // Check if MOVIEJSON is a valid JSON type (PostgreSQL will automatically return it as a JavaScript object)
+                if (movieData.json) {
+                    return { message: 'Movie data retrieved as JSON', data: movieData.json };
+                }
+
+                // Check if MOVIEJSONB is a valid JSONB type (PostgreSQL will automatically return it as a JavaScript object)
+                if (movieData.jsonb) {
+                    return { message: 'Movie data retrieved as JSONB', data: movieData.jsonb };
+                }
+            }
+
+            return { message: 'No movie data found', data: null };
+        } catch (error) {
+            console.log('Error retrieving movie data:', error);
+            throw error;
+        }
+    }
+
+
 } 

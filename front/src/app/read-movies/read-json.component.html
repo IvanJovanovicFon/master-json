@@ -1,1 +1,81 @@
-<p>read-json works!</p>
+<div class="read-movie-container">
+  <h2>Read and Update Movie</h2>
+
+  <!-- Database Selection -->
+  <div>
+    <label for="dbSelect">Select Database:</label>
+    <select id="dbSelect" [(ngModel)]="selectedDb">
+      <option *ngFor="let db of databases" [value]="db">{{ db }}</option>
+    </select>
+  </div>
+
+  <!-- Movie ID Input -->
+  <div>
+    <label for="movieId">Movie ID:</label>
+    <input id="movieId" type="number" [(ngModel)]="movieId"/>
+  </div>
+
+  <!-- Load Movie Button -->
+  <button (click)="loadMovie()">Load Movie</button>
+
+  <!-- Movie Details Form -->
+  <div *ngIf="movie">
+    <h3>Movie Details</h3>
+    <form>
+      <!-- Movie Name -->
+      <div>
+        <label for="name">Name:</label>
+        <input id="name" [(ngModel)]="movie.name" name="name"/>
+      </div>
+
+      <!-- Movie Genre -->
+      <div>
+        <label for="genre">Genre:</label>
+        <input id="genre" [(ngModel)]="movie.genre" name="genre"/>
+      </div>
+
+      <!-- Movie Year -->
+      <div>
+        <label for="year">Year:</label>
+        <input id="year" type="number" [(ngModel)]="movie.year" name="year"/>
+      </div>
+
+      <!-- Director Details -->
+      <h4>Director</h4>
+      <div>
+        <label for="directorFName">First Name:</label>
+        <input id="directorFName" [(ngModel)]="movie.director.f_name" name="directorFName"/>
+      </div>
+      <div>
+        <label for="directorLName">Last Name:</label>
+        <input id="directorLName" [(ngModel)]="movie.director.l_name" name="directorLName"/>
+      </div>
+      <div>
+        <label for="directorBYear">Birth Year:</label>
+        <input id="directorBYear" type="number" [(ngModel)]="movie.director.b_year" name="directorBYear"/>
+      </div>
+
+      <!-- Actor List -->
+      <h4>Actors</h4>
+      <div *ngFor="let actor of movie.actor; let i = index">
+        <fieldset>
+          <legend>Actor {{ i + 1 }}</legend>
+          <label for="actorFName{{ i }}">First Name:</label>
+          <input id="actorFName{{ i }}" [(ngModel)]="actor.f_name" name="actorFName{{ i }}"/>
+
+          <label for="actorLName{{ i }}">Last Name:</label>
+          <input id="actorLName{{ i }}" [(ngModel)]="actor.l_name" name="actorLName{{ i }}"/>
+
+          <label for="actorBYear{{ i }}">Birth Year:</label>
+          <input id="actorBYear{{ i }}" type="number" [(ngModel)]="actor.b_year" name="actorBYear{{ i }}"/>
+
+          <button type="button" (click)="removeActor(i)">Remove Actor</button>
+        </fieldset>
+      </div>
+      <button type="button" (click)="addActor()">Add Actor</button>
+    </form>
+
+    <!-- Update Movie Button -->
+    <button (click)="updateMovie()">Update Movie</button>
+  </div>
+</div>
