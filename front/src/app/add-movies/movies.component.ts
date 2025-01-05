@@ -13,7 +13,6 @@ import {Actor} from '../model/actor';
     FormsModule,
     CommonModule,
     ReactiveFormsModule,
-
   ],
   providers: [],
   standalone: true

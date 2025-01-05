@@ -18,9 +18,9 @@ import {Actor} from '../model/actor';
 })
 export class ReadJsonComponent {
   databases = ['Oracle', 'SQLServer', 'PostgreSQL'];
-  selectedDb: string = 'SQLServer';
-  movieId: number = 0;
-  movie: any = null;
+  selectedDb: string = 'Oracle';
+  movieId: number = 5;
+  movie: Movie = new Movie();
 
   constructor(private movieService: MoviesService) {
   }
@@ -34,10 +34,10 @@ export class ReadJsonComponent {
   }
 
   loadMovie() {
-    console.log(this.selectedDb)
     this.movieService.getMovieById(this.selectedDb, this.movieId).subscribe({
-      next: (data) => {
-        this.movie = data;
+      next: (response: any) => {
+        // Assuming the response has a structure: { message: string, data: any }
+        this.movie = response.data; // Extract the 'data' field from the response
       },
       error: (error) => {
         console.error('Error loading movie:', error);
