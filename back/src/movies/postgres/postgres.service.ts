@@ -80,4 +80,7 @@ console.log(parameters)
     }
 
 
+    async findAllByType(jsonType: string) {
+        return Promise.resolve(undefined);
+    }
 } 

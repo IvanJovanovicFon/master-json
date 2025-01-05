@@ -1,4 +1,16 @@
-import {Body, Controller, Post, HttpException, HttpStatus, Inject, forwardRef, Get, Param, Put} from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Post,
+    HttpException,
+    HttpStatus,
+    Inject,
+    forwardRef,
+    Get,
+    Param,
+    Put,
+    Query
+} from '@nestjs/common';
 import {OracleService} from './oracle/oracle.service';
 import {SqlServerService} from './sqlServer/mssql.service'
 import {PostgresService} from './postgres/postgres.service';
@@ -71,6 +83,32 @@ export class MoviesController {
             case 'postgres_json':
             case 'postgres_jsonb':
                 return await this.postgresService.handleMovieData(jsonType, movie);
+
+            default:
+                throw new HttpException(`Unsupported jsonType: ${jsonType}`, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Get('findAll')
+    async findAllMovies(@Query('selectedOption') selectedOption: string) {
+        const jsonType  = selectedOption;
+        console.log(jsonType)
+        if (!jsonType ) {
+            throw new HttpException('jsonType is required.', HttpStatus.BAD_REQUEST);
+        }
+
+        switch (jsonType) {
+            case 'oracle_json':
+            case 'oracle_blob':
+                return await this.oracleService.findAllByType(jsonType);
+
+            case 'mssql_json':
+            case 'mssql_varchar':
+                return await this.sqlServerService.findAllByType(jsonType);
+
+            case 'postgres_json':
+            case 'postgres_jsonb':
+                return await this.postgresService.findAllByType(jsonType);
 
             default:
                 throw new HttpException(`Unsupported jsonType: ${jsonType}`, HttpStatus.BAD_REQUEST);

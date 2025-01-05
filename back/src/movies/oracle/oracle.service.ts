@@ -44,10 +44,12 @@ export class OracleService {
         return Promise.resolve(undefined);
     }
 
-    async readData( movieId: number): Promise<any> {
+    async readData(movieId: number): Promise<any> {
         try {
 
-            const query = `SELECT MOVIEJSON, MOVIECLOB FROM MOVIES WHERE ID = :movieId`;
+            const query = `SELECT MOVIEJSON, MOVIECLOB
+                           FROM MOVIES
+                           WHERE ID = :movieId`;
             const parameters = [movieId];
             const result = await this.dataSource.manager.query(query, parameters);
 
@@ -57,9 +59,9 @@ export class OracleService {
                 if (movieData.MOVIEJSON) {
                     try {
                         const parsedJson = JSON.parse(movieData.MOVIEJSON);
-                        return { message: 'Movie data retrieved as JSON', data: parsedJson };
+                        return {message: 'Movie data retrieved as JSON', data: parsedJson};
                     } catch (error) {
-                        return { message: 'Invalid JSON in MOVIEJSON column', data: null };
+                        return {message: 'Invalid JSON in MOVIEJSON column', data: null};
                     }
                 }
 
@@ -68,17 +70,61 @@ export class OracleService {
                     const jsonString = movieData.MOVIECLOB.toString();
                     try {
                         const parsedJson = JSON.parse(jsonString); // Try to parse it as JSON
-                        return { message: 'Movie data retrieved from BLOB as JSON', data: parsedJson };
+                        return {message: 'Movie data retrieved from BLOB as JSON', data: parsedJson};
                     } catch (error) {
-                        return { message: 'Invalid JSON in MOVIECLOB column', data: null };
+                        return {message: 'Invalid JSON in MOVIECLOB column', data: null};
                     }
                 }
             }
 
-            return { message: 'No movie data found', data: null };
+            return {message: 'No movie data found', data: null};
         } catch (error) {
             console.log('Error retrieving movie data:', error);
             throw error;
         }
     }
+
+    async findAllByType(jsonType: string) {
+        try {
+            let query: string;
+            let result: any[];
+
+            if (jsonType === 'oracle_json') {
+                query = `
+                SELECT MOVIEJSON
+                FROM MOVIES
+                WHERE MOVIEJSON IS NOT NULL
+            `;
+            } else if (jsonType === 'oracle_blob') {
+                query = `
+                SELECT MOVIECLOB
+                FROM MOVIES
+                WHERE MOVIECLOB IS NOT NULL
+            `;
+            } else {
+                return { message: 'Invalid JSON type', data: null };
+            }
+
+            result = await this.dataSource.manager.query(query);
+
+            return {
+                message: `Retrieved data from ${jsonType}`,
+                data: result.map((row) => {
+                    if (jsonType === 'oracle_blob') {
+                        try {
+                            const parsedBlob = JSON.parse(row.MOVIECLOB);
+                            return { data: parsedBlob };
+                        } catch {
+                            return { data: null, error: 'Invalid JSON in BLOB' };
+                        }
+                    }
+                    return { data: row.MOVIEJSON };
+                }),
+            };
+        } catch (error) {
+            console.error('Error retrieving movie data:', error);
+            throw new Error('Failed to retrieve movie data from the database.');
+        }
+    }
+
 }

@@ -12,6 +12,12 @@ export class MoviesService {
   constructor(private http: HttpClient) {
   }
 
+  findAllMovies(selectedOption: string): Observable<any> {
+    const params = { selectedOption };
+    return this.http.get<any>(`${this.apiUrl}/findAll`, { params });
+  }
+
+
   getMovieById(database: string, movieId: number): Observable<Movie> {
     return this.http.get<Movie>(`${this.apiUrl}/${database}/${movieId}`);
   }
