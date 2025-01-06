@@ -69,6 +69,42 @@ export class SqlServerService {
     }
 
     async findAllByType(jsonType: string) {
-        return Promise.resolve(undefined);
+        try {
+            let query: string;
+            let result: any[];
+
+            // Check if the requested type is valid for MSSQL
+            if (jsonType === 'mssql_varchar') {
+                query = `
+                SELECT nvarcharColumn
+                FROM [JSONMASTER].[dbo].[MASTER]
+                WHERE nvarcharColumn IS NOT NULL
+            `;
+            } else {
+                return { message: 'Invalid JSON type for MSSQL', data: null };
+            }
+
+            // Execute the query
+            result = await this.dataSource.manager.query(query);
+
+            // Format and return the result
+            return {
+                message: `Retrieved data from ${jsonType}`,
+                data: result.map((row) => {
+                    try {
+                        // Parse the nvarcharColumn content as JSON
+                        const parsedJson = JSON.parse(row.nvarcharColumn);
+                        return { data: parsedJson };
+                    } catch (error) {
+                        // Handle invalid JSON in nvarcharColumn
+                        return { data: null, error: 'Invalid JSON in nvarcharColumn' };
+                    }
+                }),
+            };
+        } catch (error) {
+            console.error('Error retrieving movie data:', error);
+            throw new Error('Failed to retrieve movie data from the database.');
+        }
     }
+
 }

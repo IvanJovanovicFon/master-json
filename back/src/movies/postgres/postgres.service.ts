@@ -81,6 +81,42 @@ console.log(parameters)
 
 
     async findAllByType(jsonType: string) {
-        return Promise.resolve(undefined);
+        try {
+            let query: string;
+            let result: any[];
+
+            // Determine the query based on the JSON type
+            if (jsonType === 'postgres_json') {
+                query = `
+                SELECT json
+                FROM master
+                WHERE json IS NOT NULL
+            `;
+            } else if (jsonType === 'postgres_jsonb') {
+                query = `
+                SELECT jsonb
+                FROM master
+                WHERE jsonb IS NOT NULL
+            `;
+            } else {
+                return { message: 'Invalid JSON type', data: null };
+            }
+
+            // Execute the query
+            result = await this.dataSource.manager.query(query);
+
+            // Format and return the result
+            return {
+                message: `Retrieved data from ${jsonType}`,
+                data: result.map((row) => {
+                    // For both JSON and JSONB, the content is directly usable
+                    return { data: row.json || row.jsonb };
+                }),
+            };
+        } catch (error) {
+            console.error('Error retrieving movie data:', error);
+            throw new Error('Failed to retrieve movie data from the database.');
+        }
     }
+
 } 

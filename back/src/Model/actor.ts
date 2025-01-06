@@ -1,11 +1,11 @@
 export class Actor {
     f_name: string;
     l_name: string;
-    b_year: number;
+    role: string;
 
-    constructor(f_name: string = '', l_name: string = '', b_year: number = 0) {
+    constructor(f_name: string = '', l_name: string = '', role: string = '') {
         this.f_name = f_name;
         this.l_name = l_name;
-        this.b_year = b_year;
+        this.role = role;
     }
 }

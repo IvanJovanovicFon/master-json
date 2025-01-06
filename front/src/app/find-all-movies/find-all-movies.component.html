@@ -1,0 +1,43 @@
+<div class="movie-list-container">
+  <h2>Find Movies</h2>
+
+  <div class="filters">
+    <label>Select Database & JSON Type:</label>
+    <select [(ngModel)]="selectedOption" id="database-json-type">
+      <option *ngFor="let option of options" [value]="option.value">{{ option.label }}</option>
+    </select>
+
+    <button (click)="findMovies()">Find Movies</button>
+  </div>
+
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <table *ngIf="movies.length > 0" class="movie-table">
+    <thead>
+    <tr>
+      <th>Name</th>
+      <th>Genre</th>
+      <th>Year</th>
+      <th>Director</th>
+      <th>Actors</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr *ngFor="let movie of movies">
+      <td>{{ movie.data.name }}</td>
+      <td>{{ movie.data.genre }}</td>
+      <td>{{ movie.data.year }}</td>
+      <td>{{ movie.data.director.f_name }} {{ movie.data.director.l_name }}</td>
+      <td>
+        <ul>
+          <li *ngFor="let actor of movie.data.actor">
+            {{ actor.f_name }} {{ actor.l_name }} ({{ actor.role }})
+          </li>
+        </ul>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="movies.length === 0 && !error" class="no-movies">No movies found.</div>
+</div>

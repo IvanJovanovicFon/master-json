@@ -49,7 +49,6 @@
         <input id="directorBYear" type="number" [(ngModel)]="movie.director.b_year" name="directorBYear"/>
       </div>
 
-      <!-- Actor List -->
       <h4>Actors</h4>
       <div *ngFor="let actor of movie.actor; let i = index">
         <fieldset>
@@ -63,8 +62,8 @@
             <input type="text" [(ngModel)]="actor.l_name" name="actor_l_name_{{ i }}" required />
           </div>
           <div>
-            <label>Birth Year:</label>
-            <input type="number" [(ngModel)]="actor.b_year" name="actor_b_year_{{ i }}" required />
+            <label>Role:</label>
+            <input type="text" [(ngModel)]="actor.role" name="actor_role{{ i }}" required />
           </div>
 
           <button type="button" (click)="removeActor(i)">Remove Actor</button>
@@ -73,7 +72,7 @@
       <button type="button" (click)="addActor()">Add Actor</button>
     </form>
 
-    <!-- Update Movie Button -->
-    <button (click)="updateMovie()">Update Movie</button>
+    <button (click)="updateMovie()">Update whole Movie</button>
+    <button (click)="updatePartOfMovie()">Update only part of a Movie</button>
   </div>
 </div>

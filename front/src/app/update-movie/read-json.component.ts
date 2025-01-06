@@ -62,4 +62,7 @@ export class ReadJsonComponent {
     });
   }
 
+  updatePartOfMovie() {
+
+  }
 }

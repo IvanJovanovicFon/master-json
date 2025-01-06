@@ -38,8 +38,8 @@
         <input type="text" [(ngModel)]="actor.l_name" name="actor_l_name_{{ i }}" required />
       </div>
       <div>
-        <label>Birth Year:</label>
-        <input type="number" [(ngModel)]="actor.b_year" name="actor_b_year_{{ i }}" required />
+        <label>Role:</label>
+        <input type="text" [(ngModel)]="actor.role" name="actor_role{{ i }}" required />
       </div>
 
       <button type="button" (click)="removeActor(i)">Remove this actor</button>
