@@ -43,21 +43,22 @@ export class MoviesController {
         }
     }
 
-    @Put('/:database/:id')
+    @Put('/:database/:id/:jsonType')
     async updateMovie(
         @Param('database') db: string,
         @Param('id') id: number,
+        @Param('jsonType') jsonType: string,
         @Body() movieData: Movie,
     ) {
         switch (db) {
             case 'Oracle':
-                return await this.oracleService.updateMovieData(id,movieData);
+                return await this.oracleService.updateMovieData(id,movieData, jsonType);
 
-            case 'mssql':
-                return await this.sqlServerService.udateMovieData(id,movieData);
+            case 'SQLServer':
+                return await this.sqlServerService.updateMovieData(id,movieData, jsonType);
 
-            case 'postgres':
-                return await this.postgresService.updateMovieData(id,movieData);
+            case 'PostgreSQL':
+                return await this.postgresService.updateMovieData(id,movieData, jsonType);
 
             default:
                 throw new HttpException(`Unsupported db: ${db}`, HttpStatus.BAD_REQUEST);

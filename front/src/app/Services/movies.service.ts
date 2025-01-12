@@ -22,8 +22,8 @@ export class MoviesService {
     return this.http.get<Movie>(`${this.apiUrl}/${database}/${movieId}`);
   }
 
-  updateMovie(database: string, movieId: number, movieData: Movie): Observable<Movie> {
-    return this.http.put<Movie>(`${this.apiUrl}/${database}/${movieId}`, movieData);
+  updateMovie(database: string, movieId: number, movieData: Movie, jsonType: string): Observable<Movie> {
+    return this.http.put<Movie>(`${this.apiUrl}/${database}/${movieId}/${jsonType}`, movieData);
   }
 
   createMovie(movie: Movie, jsonType: string) {

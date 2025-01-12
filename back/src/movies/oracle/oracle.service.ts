@@ -40,73 +40,87 @@ export class OracleService {
         }
     }
 
-    async updateMovieData(id: number, movieData: any): Promise<any> {
-        // try {
-        //     if (jsonType === 'oracle_json') {
-        //         const query = `
-        //         UPDATE MOVIES
-        //         SET MOVIEJSON = :movieData
-        //         WHERE ID = :id
-        //     `;
-        //         const parameters = [JSON.stringify(movieData), id];
-        //
-        //         await this.dataSource.manager.query(query, parameters);
-        //         return { message: 'Updated in ORACLE as JSON', data: movieData };
-        //
-        //     } else if (jsonType === 'oracle_blob') {
-        //         const query = `
-        //         UPDATE MOVIES
-        //         SET MOVIECLOB = :movieData
-        //         WHERE ID = :id
-        //     `;
-        //         const parameters = [JSON.stringify(movieData), id];
-        //
-        //         await this.dataSource.manager.query(query, parameters);
-        //         return { message: 'Updated in ORACLE as BLOB', data: movieData };
-        //     }
-        //
-        //     return { message: 'Invalid JSON type', data: null };
-        // } catch (error) {
-        //     console.log('Error updating movie data:', error);
-        //     throw error;
-        // }
+    async updateMovieData(id: number, movieData: any, jsonType: string): Promise<any> {
+        try {
+            if (jsonType === 'oracle_json') {
+                const query = `
+                UPDATE MOVIES
+                SET MOVIEJSON = :movieData
+                WHERE ID = :id
+            `;
+                const parameters = [JSON.stringify(movieData), id];
+
+                await this.dataSource.manager.query(query, parameters);
+                return { message: 'Updated in ORACLE as JSON', data: movieData };
+
+            } else if (jsonType === 'oracle_blob') {
+                const query = `
+                UPDATE MOVIES
+                SET MOVIECLOB = :movieData
+                WHERE ID = :id
+            `;
+                const parameters = [JSON.stringify(movieData), id];
+
+                await this.dataSource.manager.query(query, parameters);
+                return { message: 'Updated in ORACLE as BLOB', data: movieData };
+            }
+
+            return { message: 'Invalid JSON type', data: null };
+        } catch (error) {
+            console.log('Error updating movie data:', error);
+            throw error;
+        }
     }
 
 
     async readData(movieId: number): Promise<any> {
         try {
-
-            const query = `SELECT MOVIEJSON, MOVIECLOB
-                           FROM MOVIES
-                           WHERE ID = :movieId`;
+            const query = `SELECT MOVIEJSON, MOVIECLOB, JSONTYPE
+                       FROM MOVIES
+                       WHERE ID = :movieId`;
             const parameters = [movieId];
             const result = await this.dataSource.manager.query(query, parameters);
 
             if (result && result.length > 0) {
                 const movieData = result[0];
 
+                // Object to store the final response
+                const response: any = {
+                    jsonType: movieData.JSONTYPE || null, // Include JSONTYPE
+                    data: null,
+                };
+
                 if (movieData.MOVIEJSON) {
                     try {
-
-                        return {message: 'Movie data retrieved as JSON', data: movieData.MOVIEJSON};
+                        response.message = 'Movie data retrieved as JSON';
+                        response.data = movieData.MOVIEJSON;
+                        return response;
                     } catch (error) {
-                        return {message: 'Invalid JSON in MOVIEJSON column', data: null};
+                        response.message = 'Invalid JSON in MOVIEJSON column';
+                        response.data = null;
+                        return response;
                     }
                 }
-
 
                 if (movieData.MOVIECLOB) {
-                    const jsonString = movieData.MOVIECLOB.toString();
                     try {
+                        const jsonString = movieData.MOVIECLOB.toString();
                         const parsedJson = JSON.parse(jsonString); // Try to parse it as JSON
-                        return {message: 'Movie data retrieved from BLOB as JSON', data: parsedJson};
+                        response.message = 'Movie data retrieved from CLOB as JSON';
+                        response.data = parsedJson;
+                        return response;
                     } catch (error) {
-                        return {message: 'Invalid JSON in MOVIECLOB column', data: null};
+                        response.message = 'Invalid JSON in MOVIECLOB column';
+                        response.data = null;
+                        return response;
                     }
                 }
+
+                response.message = 'No movie data found';
+                return response;
             }
 
-            return {message: 'No movie data found', data: null};
+            return { message: 'No movie data found', data: null, jsonType: null };
         } catch (error) {
             console.log('Error retrieving movie data:', error);
             throw error;

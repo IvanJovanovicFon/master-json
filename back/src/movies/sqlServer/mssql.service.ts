@@ -38,23 +38,47 @@ export class SqlServerService {
     }
   }
 
-    async udateMovieData(id: number, movieData: any) {
-        return Promise.resolve(undefined);
+  async updateMovieData(id: number, movieData: any, jsonType: string): Promise<any> {
+        try {
+            // Check if the jsonType is 'mssql_varchar' for NVARCHAR column
+            if (jsonType === 'mssql_varchar') {
+                const query = `
+                UPDATE [JSONMASTER].[dbo].[MASTER]
+                SET nvarcharcolumn = '${JSON.stringify(movieData)}'
+                WHERE ID = '${id}'
+            `;
+
+                await this.dataSource.manager.query(query);
+                return { message: 'Updated in MSSQL as NVARCHAR', data: movieData };
+
+            }
+            // Handle invalid jsonType
+            return { message: 'Invalid JSON type', data: null };
+        } catch (error) {
+            console.log('Error updating movie data:', error);
+            throw error;
+        }
     }
 
     async readData(movieId: number): Promise<any> {
         try {
-            const query = `SELECT nvarcharColumn FROM [JSONMASTER].[dbo].[MASTER] WHERE ID = ( ${movieId})`;
+            const query =
+                `SELECT nvarcharColumn, JSONTYPE 
+                FROM [JSONMASTER].[dbo].[MASTER] 
+                WHERE ID = ( ${movieId})`;
             const result = await this.dataSource.manager.query(query);
 
             if (result && result.length > 0) {
                 const movieData = result[0];
+                console.log(movieData)
 
                 if (movieData.nvarcharColumn) {
                     try {
-                        // Check if MOVIEJSON is a valid JSON string
-                        const parsedJson = JSON.parse(movieData.nvarcharColumn); // Parse the NVARCHAR column as JSON
-                        return { message: 'Movie data retrieved from NVARCHAR as JSON', data: parsedJson };
+                        const parsedJson = JSON.parse(movieData.nvarcharColumn);
+                        return { message: 'Movie data retrieved from NVARCHAR as JSON',
+                            jsonType: movieData.JSONTYPE,
+                            data: parsedJson
+                        };
                     } catch (error) {
                         return { message: 'Invalid JSON in MOVIEJSON column', data: null };
                     }

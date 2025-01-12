@@ -21,6 +21,7 @@ export class ReadJsonComponent {
   selectedDb: string = 'Oracle';
   movieId: number = 5;
   movie: Movie = new Movie();
+  jsonType: string = '';
 
   constructor(private movieService: MoviesService) {
   }
@@ -36,8 +37,8 @@ export class ReadJsonComponent {
   loadMovie() {
     this.movieService.getMovieById(this.selectedDb, this.movieId).subscribe({
       next: (response: any) => {
-        // Assuming the response has a structure: { message: string, data: any }
-        this.movie = response.data; // Extract the 'data' field from the response
+        this.jsonType= response.jsonType;
+        this.movie = response.data;
       },
       error: (error) => {
         console.error('Error loading movie:', error);
@@ -49,7 +50,7 @@ export class ReadJsonComponent {
   }
 
   updateMovie() {
-    this.movieService.updateMovie(this.selectedDb, this.movieId, this.movie).subscribe({
+    this.movieService.updateMovie(this.selectedDb, this.movieId, this.movie, this.jsonType).subscribe({
       next: () => {
         alert('Movie updated successfully!');
       },
