@@ -12,17 +12,17 @@ export class SqlServerService {
   async handleMovieData(jsonType: string, movieData: Movie): Promise<any> {
     try {
       if (jsonType === 'mssql_varchar') {
-       const parameters =  JSON.stringify(movieData);
+       const parameters =  [JSON.stringify(movieData), jsonType];
                const query = `
-                    INSERT INTO [JSONMASTER].[dbo].[MASTER] (nvarcharcolumn)
-                    VALUES ('${parameters}')
+                    INSERT INTO [JSONMASTER].[dbo].[MASTER] (nvarcharcolumn, JSONTYPE)
+                    VALUES ('${JSON.stringify(movieData)}', '${jsonType}')
                 `;
-        await this.dataSource.manager.query(query);
+        await this.dataSource.manager.query(query, parameters);
         return {message: 'Stored in MSSQL as NVARCHAR', data: movieData};
 
       } else if (jsonType === 'mssql_json') {
         const query = `
-                    INSERT INTO MASTER (nvarcharcolumn)
+                    INSERT INTO MASTER (nvarcharcolumn, JSONTYPE)
                     VALUES (${movieData})
                 `;
         //const parameters = [JSON.stringify(movieData)];

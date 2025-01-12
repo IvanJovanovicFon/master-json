@@ -40,9 +40,9 @@ export class MoviesComponent {
     this.movieService.createMovie(this.movie, this.jsonType);
   }
 
-  resetForm(): void {
-    this.movie = new Movie();
-  }
+  // resetForm(): void {
+  //   this.movie = new Movie();
+  // }
 
   addActor(): void {
     this.movie.actor.push(new Actor()); // Add a new actor

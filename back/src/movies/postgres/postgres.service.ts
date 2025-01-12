@@ -15,20 +15,20 @@ export class PostgresService {
       if (jsonType === 'postgres_json') {
           console.log("postgresjon123")
         const query = `
-          INSERT INTO master (json)
-          VALUES ($1)
+          INSERT INTO master (json, jsontype)
+          VALUES ($1, $2)
         `;
-        const parameters = [JSON.stringify(movieData)]; // Array of values for positional parameters
+        const parameters = [JSON.stringify(movieData), jsonType]; // Array of values for positional parameters
 console.log(parameters)
         await this.dataSource.manager.query(query, parameters); // Execute the query
         return { message: 'Stored in Postgres as JSON', data: movieData };
 
       } else if (jsonType === 'postgres_jsonb') {
         const query = `
-          INSERT INTO master (jsonb)
-          VALUES ($1)
+          INSERT INTO master (jsonb, jsontype)
+          VALUES ($1, $2)
         `;
-        const parameters = [JSON.stringify(movieData)]; // Array of values for positional parameters
+        const parameters = [JSON.stringify(movieData), jsonType]; // Array of values for positional parameters
 
         await this.dataSource.manager.query(query, parameters); // Execute the query
         return { message: 'Stored in Postgres as JSONB', data: movieData };

@@ -15,19 +15,19 @@ export class OracleService {
         try {
             if (jsonType === 'oracle_json') {
                 const query = `
-                    INSERT INTO MOVIES (MOVIEJSON)
-                    VALUES (:movieData)
+                    INSERT INTO MOVIES (MOVIEJSON, JSONTYPE)
+                    VALUES (:movieData, :jsonType)
                 `;
-                const parameters = [JSON.stringify(movieData)];
+                const parameters = [JSON.stringify(movieData), jsonType];
                 await this.dataSource.manager.query(query, parameters);
                 return {message: 'Stored in ORACLE as JSON', data: movieData};
 
             } else if (jsonType === 'oracle_blob') {
                 const query = `
-                    INSERT INTO MOVIES (MOVIECLOB)
-                    VALUES (:movieData)
+                    INSERT INTO MOVIES (MOVIECLOB, JSONTYPE) 
+                    VALUES (:movieData, :jsonType)
                 `;
-                const parameters = [JSON.stringify(movieData)];
+                const parameters = [JSON.stringify(movieData), jsonType];
 
                 await this.dataSource.manager.query(query, parameters);
                 return {message: 'Stored in ORACLE as BLOB', data: movieData};
@@ -40,9 +40,38 @@ export class OracleService {
         }
     }
 
-    async updateMovieData(id: number, movieData: any) {
-        return Promise.resolve(undefined);
+    async updateMovieData(id: number, movieData: any): Promise<any> {
+        // try {
+        //     if (jsonType === 'oracle_json') {
+        //         const query = `
+        //         UPDATE MOVIES
+        //         SET MOVIEJSON = :movieData
+        //         WHERE ID = :id
+        //     `;
+        //         const parameters = [JSON.stringify(movieData), id];
+        //
+        //         await this.dataSource.manager.query(query, parameters);
+        //         return { message: 'Updated in ORACLE as JSON', data: movieData };
+        //
+        //     } else if (jsonType === 'oracle_blob') {
+        //         const query = `
+        //         UPDATE MOVIES
+        //         SET MOVIECLOB = :movieData
+        //         WHERE ID = :id
+        //     `;
+        //         const parameters = [JSON.stringify(movieData), id];
+        //
+        //         await this.dataSource.manager.query(query, parameters);
+        //         return { message: 'Updated in ORACLE as BLOB', data: movieData };
+        //     }
+        //
+        //     return { message: 'Invalid JSON type', data: null };
+        // } catch (error) {
+        //     console.log('Error updating movie data:', error);
+        //     throw error;
+        // }
     }
+
 
     async readData(movieId: number): Promise<any> {
         try {
@@ -58,8 +87,8 @@ export class OracleService {
 
                 if (movieData.MOVIEJSON) {
                     try {
-                        const parsedJson = JSON.parse(movieData.MOVIEJSON);
-                        return {message: 'Movie data retrieved as JSON', data: parsedJson};
+
+                        return {message: 'Movie data retrieved as JSON', data: movieData.MOVIEJSON};
                     } catch (error) {
                         return {message: 'Invalid JSON in MOVIEJSON column', data: null};
                     }

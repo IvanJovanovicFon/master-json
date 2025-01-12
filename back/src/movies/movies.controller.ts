@@ -47,10 +47,10 @@ export class MoviesController {
     async updateMovie(
         @Param('database') db: string,
         @Param('id') id: number,
-        @Body() movieData: any,
+        @Body() movieData: Movie,
     ) {
         switch (db) {
-            case 'oracle':
+            case 'Oracle':
                 return await this.oracleService.updateMovieData(id,movieData);
 
             case 'mssql':
