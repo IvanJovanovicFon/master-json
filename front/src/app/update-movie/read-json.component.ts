@@ -66,4 +66,18 @@ export class ReadJsonComponent {
   updatePartOfMovie() {
 
   }
+
+  deleteMovie() {
+    this.movieService.deleteMovie(this.selectedDb, this.movieId).subscribe({
+      next: () => {
+        alert('Movie deleted successfully!');
+      },
+      error: (error: any) => {
+        console.error('Error deleting movie:', error);
+      },
+      complete: () => {
+        console.log('Movie delete completed');
+      },
+    });
+  }
 }

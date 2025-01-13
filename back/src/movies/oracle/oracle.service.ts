@@ -170,4 +170,19 @@ export class OracleService {
         }
     }
 
+    async deleteMovie(id: number) {
+        try {
+        let query: string;
+        let parameters: any[]
+
+        query = `DELETE FROM MOVIES WHERE ID = :id`;
+        parameters = [id];
+
+            await this.dataSource.manager.query(query, parameters);
+            return { message: `Movie with ID ${id} deleted successfully from Oracle` };
+        } catch (error) {
+            console.error('Error deleting movie:', error);
+            throw error;
+        }
+    }
 }

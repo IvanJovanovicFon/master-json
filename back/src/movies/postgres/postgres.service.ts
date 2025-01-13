@@ -154,4 +154,19 @@ console.log(parameters)
         }
     }
 
+    async deleteMovie(id: number) {
+        try {
+            let query: string;
+            let parameters: any[]
+
+            query = `DELETE FROM master WHERE ID = $1`;
+            parameters = [id];
+
+            await this.dataSource.manager.query(query, parameters);
+            return { message: `Movie with ID ${id} deleted successfully from PostreSQL` };
+        } catch (error) {
+            console.error('Error deleting movie:', error);
+            throw error;
+        }
+    }
 } 

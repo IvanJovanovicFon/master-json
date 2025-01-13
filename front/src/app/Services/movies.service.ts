@@ -40,4 +40,8 @@ export class MoviesService {
     });
   }
 
+  deleteMovie(databaseType: string, movieId: number) {
+    const url = `${this.apiUrl}/delete/${databaseType}/${movieId}`;
+    return this.http.delete(url);
+  }
 }

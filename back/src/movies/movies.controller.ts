@@ -9,7 +9,7 @@ import {
     Get,
     Param,
     Put,
-    Query
+    Query, Delete
 } from '@nestjs/common';
 import {OracleService} from './oracle/oracle.service';
 import {SqlServerService} from './sqlServer/mssql.service'
@@ -113,6 +113,26 @@ export class MoviesController {
 
             default:
                 throw new HttpException(`Unsupported jsonType: ${jsonType}`, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Delete('delete/:databaseType/:id')
+    async deleteMovie(
+        @Param('databaseType') databaseType: string,
+        @Param('id') id: number,
+    ): Promise<any> {
+        switch (databaseType) {
+            case 'Oracle':
+                return await this.oracleService.deleteMovie(id);
+
+            case 'SQLServer':
+                return await this.sqlServerService.deleteMovie(id);
+
+            case 'PostgreSQL':
+                return await this.postgresService.deleteMovie(id);
+
+            default:
+                throw new HttpException(`Unsupported db: ${databaseType}`, HttpStatus.BAD_REQUEST);
         }
     }
 }

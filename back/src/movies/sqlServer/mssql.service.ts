@@ -131,4 +131,17 @@ export class SqlServerService {
         }
     }
 
+    async deleteMovie(id: number) {
+        try {
+            let query: string;
+
+            query = `DELETE FROM  [JSONMASTER].[dbo].[MASTER] WHERE ID = ${id}`;
+
+            await this.dataSource.manager.query(query);
+            return { message: `Movie with ID ${id} deleted successfully from Oracle` };
+        } catch (error) {
+            console.error('Error deleting movie:', error);
+            throw error;
+        }
+    }
 }
