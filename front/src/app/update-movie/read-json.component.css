@@ -1,16 +1,50 @@
 .read-movie-container {
-  max-width: 600px;
-  margin: 20px auto;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background: #f9f9f9;
+  padding: 16px;
 }
 
-label {
-  display: block;
-  margin-top: 10px;
+.add-actor-container {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  text-align: center;
 }
+
+.add-actor-container button {
+  padding: 8px 16px;
+  font-size: 14px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.add-actor-container button:hover {
+  background-color: #45a049;
+}
+
+.movie-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.movie-actions button {
+  padding: 8px 16px;
+  font-size: 14px;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.movie-actions button:hover {
+  background-color: blue;
+}
+
 
 input, select, button {
   display: block;

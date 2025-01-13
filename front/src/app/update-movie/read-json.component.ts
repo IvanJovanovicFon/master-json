@@ -19,8 +19,8 @@ import {Actor} from '../model/actor';
 export class ReadJsonComponent {
   databases = ['Oracle', 'SQLServer', 'PostgreSQL'];
   selectedDb: string = 'Oracle';
-  movieId: number = 5;
-  movie: Movie = new Movie();
+  movieId: number  = 0;
+  movie: Movie  = new Movie();
   jsonType: string = '';
 
   constructor(private movieService: MoviesService) {
@@ -67,10 +67,16 @@ export class ReadJsonComponent {
 
   }
 
+  resetForm() {
+    this.movieId = 0;
+    this.movie = new Movie();
+  }
+
   deleteMovie() {
     this.movieService.deleteMovie(this.selectedDb, this.movieId).subscribe({
       next: () => {
         alert('Movie deleted successfully!');
+        this.resetForm()
       },
       error: (error: any) => {
         console.error('Error deleting movie:', error);
