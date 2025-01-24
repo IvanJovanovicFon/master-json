@@ -5,6 +5,8 @@ import {Movie} from "../../Model/movie";
 
 @Injectable()
 export class SqlServerService {
+    private cachedMovieData: any = null;
+
   constructor(
       @InjectDataSource('mssqlConnection') private readonly dataSource: DataSource  ) {
   }
@@ -40,7 +42,6 @@ export class SqlServerService {
 
   async updateMovieData(id: number, movieData: any, jsonType: string): Promise<any> {
         try {
-            // Check if the jsonType is 'mssql_varchar' for NVARCHAR column
             if (jsonType === 'mssql_varchar') {
                 const query = `
                 UPDATE [JSONMASTER].[dbo].[MASTER]
@@ -52,7 +53,6 @@ export class SqlServerService {
                 return { message: 'Updated in MSSQL as NVARCHAR', data: movieData };
 
             }
-            // Handle invalid jsonType
             return { message: 'Invalid JSON type', data: null };
         } catch (error) {
             console.log('Error updating movie data:', error);
@@ -60,27 +60,91 @@ export class SqlServerService {
         }
     }
 
-    async readData(movieId: number): Promise<any> {
+    async updatePartOfMovie(id: number, newMovieData: any, jsonType: string): Promise<any> {
         try {
-            const query =
-                `SELECT nvarcharColumn, JSONTYPE 
+
+            if (jsonType !== 'mssql_varchar') {
+                return { message: 'Invalid JSON type', data: null };
+            }
+
+
+            if (!this.cachedMovieData || !this.cachedMovieData.data) {
+                return { message: 'No cached data available for comparison', data: null };
+            }
+
+            const currentData = this.cachedMovieData.data;
+            const updateQueries: { path: string; value: string | null }[] = [];
+
+            // Recursively compare objects and collect changes
+            const buildUpdateQueries = (path: string, current: any, updated: any) => {
+                for (const key in updated) {
+                    if (updated[key] && typeof updated[key] === 'object' && !Array.isArray(updated[key])) {
+                        // Recursively compare nested objects
+                        buildUpdateQueries(`${path}.${key}`, current[key] || {}, updated[key]);
+                    } else if (updated[key] !== current[key]) {
+                        // Collect updates
+                        const updatePath = `${path}.${key}`;
+                        const newValue = updated[key] === null ? null : JSON.stringify(updated[key]).replace(/'/g, "''");
+                        updateQueries.push({ path: updatePath, value: newValue });
+                    }
+                }
+            };
+
+            // Start comparing from the root
+            buildUpdateQueries('$.', currentData, newMovieData);
+
+            if (updateQueries.length === 0) {
+                return { message: 'No changes detected', data: null };
+            }
+
+            // Execute each update individually
+            for (const update of updateQueries) {
+                const query = `
+                UPDATE [JSONMASTER].[dbo].[MASTER]
+                SET nvarcharcolumn = JSON_MODIFY(nvarcharcolumn, '${update.path}', ${
+                    update.value === null ? 'NULL' : `'${update.value}'`
+                })
+                WHERE ID = '${id}'
+            `;
+                await this.dataSource.manager.query(query);
+            }
+
+            return { message: 'Partially updated movie data', updatedFields: updateQueries };
+        } catch (error) {
+            console.error('Error updating part of movie data:', error);
+            throw error;
+        }
+    }
+
+
+  async readData(movieId: number): Promise<any> {
+        try {
+            const query = `
+                SELECT nvarcharColumn, JSONTYPE 
                 FROM [JSONMASTER].[dbo].[MASTER] 
-                WHERE ID = ( ${movieId})`;
+                WHERE ID = (${movieId})
+            `;
             const result = await this.dataSource.manager.query(query);
 
             if (result && result.length > 0) {
                 const movieData = result[0];
-                console.log(movieData)
 
                 if (movieData.nvarcharColumn) {
                     try {
                         const parsedJson = JSON.parse(movieData.nvarcharColumn);
-                        return { message: 'Movie data retrieved from NVARCHAR as JSON',
+
+                        this.cachedMovieData = {
+                            jsonType: movieData.JSONTYPE,
+                            data: parsedJson
+                        };
+
+                        return {
+                            message: 'Movie data retrieved from NVARCHAR as JSON',
                             jsonType: movieData.JSONTYPE,
                             data: parsedJson
                         };
                     } catch (error) {
-                        return { message: 'Invalid JSON in MOVIEJSON column', data: null };
+                        return { message: 'Invalid JSON in nvarcharColumn', data: null };
                     }
                 }
             }
@@ -92,7 +156,7 @@ export class SqlServerService {
         }
     }
 
-    async findAllByType(jsonType: string) {
+  async findAllByType(jsonType: string) {
         try {
             let query: string;
             let result: any[];
@@ -131,7 +195,7 @@ export class SqlServerService {
         }
     }
 
-    async deleteMovie(id: number) {
+  async deleteMovie(id: number) {
         try {
             let query: string;
 
@@ -144,4 +208,5 @@ export class SqlServerService {
             throw error;
         }
     }
+
 }

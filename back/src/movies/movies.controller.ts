@@ -65,6 +65,28 @@ export class MoviesController {
         }
     }
 
+    @Put('/partOfMovie/:database/:id/:jsonType')
+    async updatePartOfMovie(
+        @Param('database') db: string,
+        @Param('id') id: number,
+        @Param('jsonType') jsonType: string,
+        @Body() movieData: Movie,
+    ) {
+        switch (db) {
+            case 'Oracle':
+                return await this.oracleService.updatePartOfMovie(id,movieData, jsonType);
+
+            case 'SQLServer':
+                return await this.sqlServerService.updatePartOfMovie(id,movieData, jsonType);
+
+            case 'PostgreSQL':
+                return await this.postgresService.updatePartOfMovie(id,movieData, jsonType);
+
+            default:
+                throw new HttpException(`Unsupported db: ${db}`, HttpStatus.BAD_REQUEST);
+        }
+    }
+
     @Post()
     async handleMovieRequest(@Body() body: {movie: Movie, jsonType: string }) {
         const {movie, jsonType } = body;

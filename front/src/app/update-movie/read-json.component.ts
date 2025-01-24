@@ -64,7 +64,17 @@ export class ReadJsonComponent {
   }
 
   updatePartOfMovie() {
-
+    this.movieService.updatePartOfMovie(this.selectedDb, this.movieId, this.movie, this.jsonType).subscribe({
+      next: () => {
+        alert('Part of movie updated successfully!');
+      },
+      error: (error) => {
+        console.error('Error updating part of movie:', error);
+      },
+      complete: () => {
+        console.log('Part of movie update completed');
+      },
+    });
   }
 
   resetForm() {

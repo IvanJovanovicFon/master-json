@@ -6,6 +6,8 @@ import {InjectDataSource} from "@nestjs/typeorm";
 
 @Injectable()
 export class OracleService {
+    private cachedMovieData: { id: number; data: string } | null = null;
+
     constructor(
         @InjectDataSource('oracleConnection') private readonly dataSource: DataSource, // Correct connection name
     ) {
@@ -72,7 +74,6 @@ export class OracleService {
         }
     }
 
-
     async readData(movieId: number): Promise<any> {
         try {
             const query = `SELECT MOVIEJSON, MOVIECLOB, JSONTYPE
@@ -92,6 +93,7 @@ export class OracleService {
 
                 if (movieData.MOVIEJSON) {
                     try {
+                        this.cachedMovieData = { id: movieId, data: movieData.MOVIEJSON };
                         response.message = 'Movie data retrieved as JSON';
                         response.data = movieData.MOVIEJSON;
                         return response;
@@ -106,6 +108,7 @@ export class OracleService {
                     try {
                         const jsonString = movieData.MOVIECLOB.toString();
                         const parsedJson = JSON.parse(jsonString); // Try to parse it as JSON
+                        this.cachedMovieData = { id: movieId, data: movieData.MOVIECLOB };
                         response.message = 'Movie data retrieved from CLOB as JSON';
                         response.data = parsedJson;
                         return response;
@@ -185,4 +188,71 @@ export class OracleService {
             throw error;
         }
     }
+
+    async updatePartOfMovie(
+        id: number,
+        newMovieData: any,
+        jsonType: string
+    ): Promise<any> {
+        try {
+            console.log(this.cachedMovieData)
+            const cachedData = this.cachedMovieData?.id === id ? this.cachedMovieData.data : null;
+
+            if (!cachedData) {
+                return { message: 'No cached data available for comparison', data: null };
+            }
+
+            const patchDocument = this.generateJsonMergePatch(cachedData, newMovieData);
+
+            if (!patchDocument || Object.keys(patchDocument).length === 0) {
+                return { message: 'No changes detected', data: null };
+            }
+
+            let query: string;
+            if (jsonType === 'oracle_json') {
+                query = `
+                UPDATE MOVIES
+                SET MOVIEJSON = JSON_MERGEPATCH(MOVIEJSON, :patchDocument)
+                WHERE ID = :id
+            `;
+            } else if (jsonType === 'oracle_blob') {
+                query = `
+                UPDATE MOVIES
+                SET MOVIECLOB = JSON_MERGEPATCH(MOVIECLOB, :patchDocument)
+                WHERE ID = :id
+            `;
+            } else {
+                return { message: 'Invalid JSON type', data: null };
+            }
+
+            const parameters = [JSON.stringify(patchDocument), id];
+            await this.dataSource.manager.query(query, parameters);
+
+            return {
+                message: 'Updated successfully using JSON Merge Patch',
+                updatedFields: patchDocument,
+            };
+        } catch (error) {
+            console.log('Error updating changed parts of movie:', error);
+            throw error;
+        }
+    }
+
+
+    private generateJsonMergePatch(cachedData: any, newData: any): any {
+        const patch: any = {};
+
+        for (const key in newData) {
+            if (newData[key] === null && key in cachedData) {
+                patch[key] = null;
+            } else if (JSON.stringify(newData[key]) !== JSON.stringify(cachedData[key])) {
+                patch[key] = newData[key];
+                console.log(patch[key])
+            }
+        }
+
+        return patch;
+    }
+
+
 }
