@@ -2,6 +2,8 @@ import {Injectable} from '@nestjs/common';
 import {DataSource} from "typeorm";
 import {Movie} from "../../Model/movie";
 import {InjectDataSource} from "@nestjs/typeorm";
+import { performance } from 'perf_hooks';
+
 
 
 @Injectable()
@@ -15,27 +17,58 @@ export class OracleService {
 
     async handleMovieData(jsonType: string, movieData: Movie): Promise<any> {
         try {
+            let query: string;
+            let parameters: any[];
+            let message: string;
+
             if (jsonType === 'oracle_json') {
-                const query = `
-                    INSERT INTO MOVIES (MOVIEJSON, JSONTYPE)
-                    VALUES (:movieData, :jsonType)
-                `;
-                const parameters = [JSON.stringify(movieData), jsonType];
-                await this.dataSource.manager.query(query, parameters);
-                return {message: 'Stored in ORACLE as JSON', data: movieData};
-
+                query = `
+        INSERT INTO MOVIES (MOVIEJSON, JSONTYPE)
+        VALUES (:movieData, :jsonType)
+      `;
+                parameters = [JSON.stringify(movieData), jsonType];
+                message = 'Stored in Oracle as JSON';
             } else if (jsonType === 'oracle_blob') {
-                const query = `
-                    INSERT INTO MOVIES (MOVIECLOB, JSONTYPE) 
-                    VALUES (:movieData, :jsonType)
-                `;
-                const parameters = [JSON.stringify(movieData), jsonType];
-
-                await this.dataSource.manager.query(query, parameters);
-                return {message: 'Stored in ORACLE as BLOB', data: movieData};
+                query = `
+        INSERT INTO MOVIES (MOVIECLOB, JSONTYPE)
+        VALUES (:movieData, :jsonType)
+      `;
+                parameters = [JSON.stringify(movieData), jsonType];
+                message = 'Stored in Oracle as BLOB';
+            } else {
+                return { message: 'Invalid JSON type', data: null };
             }
 
-            return {message: 'Invalid JSON type', data: null};
+            // Capture performance metrics before the query
+            const startTime = performance.now();
+            const cpuStart = process.cpuUsage();               // CPU usage (in microseconds)
+            const memStart = process.memoryUsage().heapUsed;     // Memory usage in bytes
+
+            // Execute the insert query
+            await this.dataSource.manager.query(query, parameters);
+
+            // Capture performance metrics after the query
+            const endTime = performance.now();
+            const cpuUsageDiff = process.cpuUsage(cpuStart);     // Difference in CPU usage
+            const memEnd = process.memoryUsage().heapUsed;
+
+            // Calculate metrics
+            const latency = endTime - startTime;                 // Latency in milliseconds
+            const cpuUsageTotal = cpuUsageDiff.user + cpuUsageDiff.system; // Total CPU usage (µs)
+            const memUsageDiff = memEnd - memStart;              // Memory change in bytes
+
+            // Log the results
+            console.log(`Insert latency for ${jsonType}: ${latency.toFixed(5)} ms`);
+            console.log(`CPU usage for ${jsonType}: ${cpuUsageTotal} µs`);
+            console.log(`Memory change for ${jsonType}: ${memUsageDiff} bytes`);
+
+            return {
+                message,
+                data: movieData,
+                latency,
+                cpuUsage: cpuUsageTotal,
+                memoryUsage: memUsageDiff
+            };
         } catch (error) {
             console.log('Error inserting movie data:', error);
             throw error;

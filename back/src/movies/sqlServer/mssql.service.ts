@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {InjectDataSource} from "@nestjs/typeorm";
 import {DataSource} from "typeorm";
 import {Movie} from "../../Model/movie";
+import { performance } from 'perf_hooks';
 
 @Injectable()
 export class SqlServerService {
@@ -11,35 +12,64 @@ export class SqlServerService {
       @InjectDataSource('mssqlConnection') private readonly dataSource: DataSource  ) {
   }
 
-  async handleMovieData(jsonType: string, movieData: Movie): Promise<any> {
-    try {
-      if (jsonType === 'mssql_varchar') {
-       const parameters =  [JSON.stringify(movieData), jsonType];
-               const query = `
-                    INSERT INTO [JSONMASTER].[dbo].[MASTER] (nvarcharcolumn, JSONTYPE)
-                    VALUES ('${JSON.stringify(movieData)}', '${jsonType}')
-                `;
-        await this.dataSource.manager.query(query, parameters);
-        return {message: 'Stored in MSSQL as NVARCHAR', data: movieData};
+    async  handleMovieData(jsonType: string, movieData: Movie): Promise<any> {
+        try {
+            let query: string;
+            let parameters: any;
+            let message: string;
 
-      } else if (jsonType === 'mssql_json') {
-        const query = `
-                    INSERT INTO MASTER (nvarcharcolumn, JSONTYPE)
-                    VALUES (${movieData})
-                `;
-        //const parameters = [JSON.stringify(movieData)];
+            if (jsonType === 'mssql_varchar') {
+                query = `
+        INSERT INTO [JSONMASTER].[dbo].[MASTER] (nvarcharcolumn, JSONTYPE)
+        VALUES ('${JSON.stringify(movieData)}', '${jsonType}')
+      `;
+                parameters = { movieData: JSON.stringify(movieData), jsonType };
+                message = 'Stored in MSSQL as NVARCHAR';
+            } else if (jsonType === 'mssql_json') {
+                query = `
+        INSERT INTO [JSONMASTER].[dbo].[MASTER] (nvarcharcolumn, JSONTYPE)
+        VALUES ('${JSON.stringify(movieData)}', '${jsonType}')
+      `;
+                parameters = { movieData: JSON.stringify(movieData), jsonType };
+                message = 'Stored in MSSQL as JSON';
+            } else {
+                return { message: 'Invalid JSON type', data: null };
+            }
 
-        await this.dataSource.manager.query(query);
-        return {message: 'Stored in MSSQL as nebitno', data: movieData};
-      }
+            // Capture performance metrics before executing the query
+            const startTime = performance.now();
+            const cpuStart = process.cpuUsage();              // CPU usage (in microseconds)
+            const memStart = process.memoryUsage().heapUsed;    // Heap memory usage in bytes
 
-      return {message: 'Invalid JSON type', data: null};
-    } catch (error) {
-      console.log('Error inserting movie data:', error);
-      throw error;
+            // Execute the query
+            await this.dataSource.manager.query(query, parameters);
+
+            // Capture performance metrics after the query
+            const endTime = performance.now();
+            const cpuUsageDiff = process.cpuUsage(cpuStart);    // CPU usage diff (user + system)
+            const memEnd = process.memoryUsage().heapUsed;
+
+            // Calculate metrics
+            const latency = endTime - startTime;                // Latency in milliseconds
+            const cpuUsageTotal = cpuUsageDiff.user + cpuUsageDiff.system; // Total CPU usage in µs
+            const memUsageDiff = memEnd - memStart;             // Change in memory usage in bytes
+
+            console.log(`Insert latency for ${jsonType}: ${latency.toFixed(5)} ms`);
+            console.log(`CPU usage for ${jsonType}: ${cpuUsageTotal} µs`);
+            console.log(`Memory change for ${jsonType}: ${memUsageDiff} bytes`);
+
+            return {
+                message,
+                data: movieData,
+                latency,
+                cpuUsage: cpuUsageTotal,
+                memoryUsage: memUsageDiff
+            };
+        } catch (error) {
+            console.log('Error inserting movie data:', error);
+            throw error;
+        }
     }
-  }
-
   async updateMovieData(id: number, movieData: any, jsonType: string): Promise<any> {
         try {
             if (jsonType === 'mssql_varchar') {

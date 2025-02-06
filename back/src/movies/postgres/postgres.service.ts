@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {DataSource} from "typeorm";
 import {Movie} from "../../Model/movie";
 import {InjectDataSource} from "@nestjs/typeorm";
+import { performance } from 'perf_hooks';
 
 @Injectable()
 export class PostgresService {
@@ -13,35 +14,65 @@ export class PostgresService {
     ) {}// Inject the PostgreSQL DataSource
 
 
-  async handleMovieData(jsonType: string, movieData: Movie): Promise<any> {
-    try {
-      if (jsonType === 'postgres_json') {
-          console.log("postgresjon123")
-        const query = `
-          INSERT INTO master (json, jsontype)
-          VALUES ($1, $2)
-        `;
-        const parameters = [JSON.stringify(movieData), jsonType]; // Array of values for positional parameters
-        await this.dataSource.manager.query(query, parameters); // Execute the query
-        return { message: 'Stored in Postgres as JSON', data: movieData };
+    async handleMovieData(jsonType: string, movieData: Movie): Promise<any> {
+        try {
+            let query: string;
+            let parameters: any[];
+            let message: string;
 
-      } else if (jsonType === 'postgres_jsonb') {
-        const query = `
-          INSERT INTO master (jsonb, jsontype)
-          VALUES ($1, $2)
-        `;
-        const parameters = [JSON.stringify(movieData), jsonType]; // Array of values for positional parameters
+            if (jsonType === 'postgres_json') {
+                query = `
+        INSERT INTO master (json, jsontype)
+        VALUES ($1, $2)
+      `;
+                parameters = [JSON.stringify(movieData), jsonType];
+                message = 'Stored in Postgres as JSON';
+            } else if (jsonType === 'postgres_jsonb') {
+                query = `
+        INSERT INTO master (jsonb, jsontype)
+        VALUES ($1, $2)
+      `;
+                parameters = [JSON.stringify(movieData), jsonType];
+                message = 'Stored in Postgres as JSONB';
+            } else {
+                return { message: 'Invalid JSON type', data: null };
+            }
 
-        await this.dataSource.manager.query(query, parameters); // Execute the query
-        return { message: 'Stored in Postgres as JSONB', data: movieData };
-      }
+            // Capture performance metrics before executing the query
+            const startTime = performance.now();
+            const cpuStart = process.cpuUsage();               // CPU usage in microseconds
+            const memStart = process.memoryUsage().heapUsed;     // Heap memory usage in bytes
 
-      return { message: 'Invalid JSON type', data: null };
-    } catch (error) {
-      console.log('Error inserting movie data:', error);
-      throw error;
+            // Execute the query
+            await this.dataSource.manager.query(query, parameters);
+
+            // Capture performance metrics after the query
+            const endTime = performance.now();
+            const cpuUsageDiff = process.cpuUsage(cpuStart);     // Difference in CPU usage
+            const memEnd = process.memoryUsage().heapUsed;
+
+            // Calculate the metrics
+            const latency = endTime - startTime;                 // Latency in milliseconds
+            const cpuUsageTotal = cpuUsageDiff.user + cpuUsageDiff.system; // Total CPU usage (µs)
+            const memUsageDiff = memEnd - memStart;              // Change in memory usage (bytes)
+
+            // Log the results
+            console.log(`Insert latency for ${jsonType}: ${latency.toFixed(5)} ms`);
+            console.log(`CPU usage for ${jsonType}: ${cpuUsageTotal} µs`);
+            console.log(`Memory change for ${jsonType}: ${memUsageDiff} bytes`);
+
+            return {
+                message,
+                data: movieData,
+                latency,
+                cpuUsage: cpuUsageTotal,
+                memoryUsage: memUsageDiff
+            };
+        } catch (error) {
+            console.log('Error inserting movie data:', error);
+            throw error;
+        }
     }
-  }
 
     async updateMovieData(id: number, movieData: any, jsonType: string): Promise<any> {
         try {
