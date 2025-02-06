@@ -107,38 +107,83 @@ export class PostgresService {
 
     async readData(movieId: number): Promise<any> {
         try {
+            // Start overall measurement
+            const overallStart = performance.now();
+            const cpuStart = process.cpuUsage();           // CPU usage snapshot (in microseconds)
+            const memStart = process.memoryUsage().heapUsed; // Memory usage snapshot (in bytes)
+
+            // Prepare and execute the query
             const query = `
-                SELECT json, jsonb, jsontype
-                FROM master
-                WHERE ID = $1
-            `;
+      SELECT json, jsonb, jsontype
+      FROM master
+      WHERE ID = $1
+    `;
             const parameters = [movieId];
 
+            // Measure query execution time
+            const queryStart = performance.now();
             const result = await this.dataSource.manager.query(query, parameters);
+            const queryEnd = performance.now();
+            const queryLatency = queryEnd - queryStart; // in milliseconds
 
+            // Process the results and measure the mapping/processing latency
+            let mappingLatency = 0;
+            let response: any = { message: '', data: null, jsonType: null };
             if (result && result.length > 0) {
                 const movieData = result[0];
 
+                // Start mapping measurement
+                const mappingStart = performance.now();
                 if (movieData.json) {
                     this.cachedMovieData = { id: movieId, data: movieData.json };
-                    return {
+                    response = {
                         message: 'Movie data retrieved as JSON',
                         data: movieData.json,
                         jsonType: movieData.jsontype,
                     };
-                }
-
-                if (movieData.jsonb) {
+                } else if (movieData.jsonb) {
                     this.cachedMovieData = { id: movieId, data: movieData.jsonb };
-                    return {
+                    response = {
                         message: 'Movie data retrieved as JSONB',
                         data: movieData.jsonb,
                         jsonType: movieData.jsontype,
                     };
+                } else {
+                    response = { message: 'No movie data found', data: null, jsonType: null };
                 }
+                const mappingEnd = performance.now();
+                mappingLatency = mappingEnd - mappingStart; // in milliseconds
+            } else {
+                response = { message: 'No movie data found', data: null, jsonType: null };
             }
 
-            return { message: 'No movie data found', data: null, jsonType: null };
+            // End overall measurement
+            const overallEnd = performance.now();
+            const overallLatency = overallEnd - overallStart; // in milliseconds
+
+            // Calculate CPU usage and memory change
+            const cpuUsageDiff = process.cpuUsage(cpuStart);
+            const cpuUsageTotal = cpuUsageDiff.user + cpuUsageDiff.system; // Total CPU time in microseconds
+            const memEnd = process.memoryUsage().heapUsed;
+            const memUsageDiff = memEnd - memStart; // Change in memory usage (bytes)
+
+            // Log performance metrics
+            console.log(`Query latency: ${queryLatency.toFixed(5)} ms`);
+            console.log(`Mapping latency: ${mappingLatency.toFixed(5)} ms`);
+            console.log(`Overall operation latency: ${overallLatency.toFixed(5)} ms`);
+            console.log(`CPU usage: ${cpuUsageTotal} µs`);
+            console.log(`Memory usage change: ${memUsageDiff} bytes`);
+
+            // Attach metrics to the response
+            response.metrics = {
+                queryLatency,       // Database query execution time in ms
+                mappingLatency,     // Time spent processing the result set in ms
+                overallLatency,     // Total time for the entire operation in ms
+                cpuUsage: cpuUsageTotal, // Total CPU time used (µs)
+                memoryUsage: memUsageDiff, // Change in heap memory (bytes)
+            };
+
+            return response;
         } catch (error) {
             console.error('Error retrieving movie data:', error);
             throw error;
@@ -205,38 +250,75 @@ export class PostgresService {
         }
     }
 
-    async findAllByType(jsonType: string) {
+    async  findAllByType(jsonType: string) {
         try {
+            // Start overall measurement of the operation
+            const overallStart = performance.now();
+            const cpuStart = process.cpuUsage();           // CPU time before the operation
+            const memStart = process.memoryUsage().heapUsed; // Memory usage before the operation
+
             let query: string;
-            let result: any[];
 
             // Determine the query based on the JSON type
             if (jsonType === 'postgres_json') {
                 query = `
-                SELECT json
-                FROM master
-                WHERE json IS NOT NULL
-            `;
+        SELECT json
+        FROM master
+        WHERE json IS NOT NULL
+      `;
             } else if (jsonType === 'postgres_jsonb') {
                 query = `
-                SELECT jsonb
-                FROM master
-                WHERE jsonb IS NOT NULL
-            `;
+        SELECT jsonb
+        FROM master
+        WHERE jsonb IS NOT NULL
+      `;
             } else {
                 return { message: 'Invalid JSON type', data: null };
             }
 
-            // Execute the query
-            result = await this.dataSource.manager.query(query);
+            // Measure the time taken for the query execution
+            const queryStart = performance.now();
+            const result: any[] = await this.dataSource.manager.query(query);
+            const queryEnd = performance.now();
+            const queryLatency = queryEnd - queryStart; // Query execution time in ms
 
-            // Format and return the result
+            // Measure the time required to map/format the result rows
+            const mappingStart = performance.now();
+            const processedData = result.map((row) => {
+                // For both JSON and JSONB, the content is directly usable
+                return { data: row.json || row.jsonb };
+            });
+            const mappingEnd = performance.now();
+            const mappingLatency = mappingEnd - mappingStart; // Mapping time in ms
+
+            // End overall measurement
+            const overallEnd = performance.now();
+            const overallLatency = overallEnd - overallStart; // Total operation time in ms
+
+            // Capture CPU usage and memory usage differences
+            const cpuUsageDiff = process.cpuUsage(cpuStart);
+            const cpuUsageTotal = cpuUsageDiff.user + cpuUsageDiff.system; // in microseconds
+            const memEnd = process.memoryUsage().heapUsed;
+            const memUsageDiff = memEnd - memStart; // in bytes
+
+            // Log the performance metrics
+            console.log(`Query latency: ${queryLatency.toFixed(5)} ms`);
+            console.log(`Mapping latency: ${mappingLatency.toFixed(5)} ms`);
+            console.log(`Overall operation latency: ${overallLatency.toFixed(5)} ms`);
+            console.log(`CPU usage: ${cpuUsageTotal} µs`);
+            console.log(`Memory change: ${memUsageDiff} bytes`);
+
+            // Return both the data and the performance metrics
             return {
                 message: `Retrieved data from ${jsonType}`,
-                data: result.map((row) => {
-                    // For both JSON and JSONB, the content is directly usable
-                    return { data: row.json || row.jsonb };
-                }),
+                data: processedData,
+                metrics: {
+                    queryLatency,       // Time spent executing the query
+                    mappingLatency,     // Time spent mapping the results
+                    overallLatency,     // Total time for the entire operation
+                    cpuUsage: cpuUsageTotal,   // CPU time used (in µs)
+                    memoryUsage: memUsageDiff, // Memory change (in bytes)
+                }
             };
         } catch (error) {
             console.error('Error retrieving movie data:', error);
