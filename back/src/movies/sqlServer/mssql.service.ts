@@ -51,7 +51,7 @@ export class SqlServerService {
 
             // Calculate metrics
             const latency = endTime - startTime;                // Latency in milliseconds
-            const cpuUsageTotal = cpuUsageDiff.user + cpuUsageDiff.system; // Total CPU usage in µs
+            const cpuUsageTotal = cpuUsageDiff.system; // Total CPU usage in µs
             const memUsageDiff = memEnd - memStart;             // Change in memory usage in bytes
 
             console.log(`Insert latency for ${jsonType}: ${latency.toFixed(5)} ms`);
@@ -73,18 +73,59 @@ export class SqlServerService {
 
     async updateMovieData(id: number, movieData: any, jsonType: string): Promise<any> {
         try {
-            if (jsonType === 'mssql_varchar') {
-                const query = `
-                    UPDATE [JSONMASTER].[dbo].[MASTER]
-                    SET nvarcharcolumn = '${JSON.stringify(movieData)}'
-                    WHERE ID = '${id}'
-                `;
-
-                await this.dataSource.manager.query(query);
-                return {message: 'Updated in MSSQL as NVARCHAR', data: movieData};
-
+            // Only handle the 'mssql_varchar' type; return early for invalid types.
+            if (jsonType !== 'mssql_varchar') {
+                return { message: 'Invalid JSON type', data: null };
             }
-            return {message: 'Invalid JSON type', data: null};
+
+            const cpuStart = process.cpuUsage();           // Capture CPU usage (in microseconds)
+            const memStart = process.memoryUsage().heapUsed; // Capture heap memory (in bytes)
+
+            // --- Prepare the Query ---
+            // Using string interpolation as in your original code, but note that parameterized queries are preferred.
+            const query = `
+      UPDATE [JSONMASTER].[dbo].[MASTER]
+      SET nvarcharcolumn = '${JSON.stringify(movieData)}'
+      WHERE ID = '${id}'
+    `;
+            // If possible, use a parameterized version similar to:
+            // const query = `
+            //   UPDATE [JSONMASTER].[dbo].[MASTER]
+            //   SET nvarcharcolumn = @movieData
+            //   WHERE ID = @id
+            // `;
+            // const parameters = { movieData: JSON.stringify(movieData), id };
+
+            // --- Measure Query Execution Latency ---
+            const queryStart = performance.now();
+            await this.dataSource.manager.query(query);
+            const queryEnd = performance.now();
+            const queryLatency = queryEnd - queryStart; // Time in milliseconds
+
+
+
+            // --- Capture CPU and Memory Differences ---
+            const cpuUsageDiff = process.cpuUsage(cpuStart);
+            const cpuUsageTotal =  cpuUsageDiff.system; // Total CPU time (µs)
+            const memEnd = process.memoryUsage().heapUsed;
+            const memUsageDiff = memEnd - memStart; // Memory change in bytes
+
+            // Log the performance metrics
+            console.log(`Update query latency: ${queryLatency.toFixed(5)} ms`);
+
+            console.log(`CPU usage: ${cpuUsageTotal} µs`);
+            console.log(`Memory usage change: ${memUsageDiff} bytes`);
+
+            // Return the result along with the performance metrics
+            return {
+                message: 'Updated in MSSQL as NVARCHAR',
+                data: movieData,
+                metrics: {
+                    queryLatency,       // Time taken by the database update query (ms)
+                    cpuUsage: cpuUsageTotal,   // CPU time consumed during the operation (µs)
+                    memoryUsage: memUsageDiff  // Change in heap memory (bytes)
+                }
+            };
         } catch (error) {
             console.log('Error updating movie data:', error);
             throw error;
@@ -150,8 +191,7 @@ export class SqlServerService {
 
     async readData(movieId: number): Promise<any> {
         try {
-            // --- Overall Metrics Start ---
-            const overallStart = performance.now();
+
             const cpuStart = process.cpuUsage();           // CPU snapshot in microseconds
             const memStart = process.memoryUsage().heapUsed; // Memory snapshot in bytes
 
@@ -188,20 +228,16 @@ export class SqlServerService {
                         data: parsedJson
                     };
 
-                    // --- Overall End Metrics ---
-                    const overallEnd = performance.now();
-                    const overallLatency = overallEnd - overallStart; // in milliseconds
 
                     // Calculate CPU and Memory usage differences
                     const cpuUsageDiff = process.cpuUsage(cpuStart);
-                    const cpuUsageTotal = cpuUsageDiff.user + cpuUsageDiff.system; // in microseconds
+                    const cpuUsageTotal = cpuUsageDiff.system; // in microseconds
                     const memEnd = process.memoryUsage().heapUsed;
                     const memUsageDiff = memEnd - memStart; // in bytes
 
                     // Log all metrics
                     console.log(`Query latency: ${queryLatency.toFixed(5)} ms`);
                     console.log(`Mapping latency: ${mappingLatency.toFixed(5)} ms`);
-                    console.log(`Overall latency: ${overallLatency.toFixed(5)} ms`);
                     console.log(`CPU usage: ${cpuUsageTotal} µs`);
                     console.log(`Memory usage change: ${memUsageDiff} bytes`);
 
@@ -212,7 +248,6 @@ export class SqlServerService {
                         metrics: {
                             queryLatency,       // Time for query execution (ms)
                             mappingLatency,     // Time for JSON parsing (ms)
-                            overallLatency,     // Total operation time (ms)
                             cpuUsage: cpuUsageTotal,   // CPU time used (µs)
                             memoryUsage: memUsageDiff  // Memory change (bytes)
                         }
@@ -220,15 +255,13 @@ export class SqlServerService {
                 }
             }
 
-            // If no data was found, complete the overall measurement and return
-            const overallEnd = performance.now();
-            const overallLatency = overallEnd - overallStart; // in milliseconds
+
             const cpuUsageDiff = process.cpuUsage(cpuStart);
-            const cpuUsageTotal = cpuUsageDiff.user + cpuUsageDiff.system; // in microseconds
+            const cpuUsageTotal =  cpuUsageDiff.system; // in microseconds
             const memEnd = process.memoryUsage().heapUsed;
             const memUsageDiff = memEnd - memStart; // in bytes
 
-            console.log(`Overall latency: ${overallLatency.toFixed(5)} ms`);
+
             console.log(`CPU usage: ${cpuUsageTotal} µs`);
             console.log(`Memory usage change: ${memUsageDiff} bytes`);
 
@@ -236,7 +269,7 @@ export class SqlServerService {
                 message: 'No movie data found',
                 data: null,
                 metrics: {
-                    overallLatency,
+
                     cpuUsage: cpuUsageTotal,
                     memoryUsage: memUsageDiff
                 }
@@ -294,14 +327,14 @@ export class SqlServerService {
 
             // Capture CPU usage difference and memory usage difference
             const cpuUsageDiff = process.cpuUsage(cpuStart);
-            const cpuUsageTotal = cpuUsageDiff.user + cpuUsageDiff.system; // in microseconds
+            const cpuUsageTotal =  cpuUsageDiff.system; // in microseconds
             const memEnd = process.memoryUsage().heapUsed;
             const memUsageDiff = memEnd - memStart; // in bytes
 
             // Log the performance metrics
             console.log(`Query latency: ${queryLatency.toFixed(5)} ms`);
             console.log(`Mapping latency: ${mappingLatency.toFixed(5)} ms`);
-            console.log(`Overall operation latency: ${overallLatency.toFixed(5)} ms`);
+
             console.log(`CPU usage: ${cpuUsageTotal} µs`);
             console.log(`Memory change: ${memUsageDiff} bytes`);
 
@@ -312,7 +345,7 @@ export class SqlServerService {
                 metrics: {
                     queryLatency,       // Time taken by the database to execute the query
                     mappingLatency,     // Time taken to parse/format the result set
-                    overallLatency,     // Total time for the entire operation
+
                     cpuUsage: cpuUsageTotal,   // Total CPU time consumed (user + system in µs)
                     memoryUsage: memUsageDiff  // Change in heap memory during the operation (bytes)
                 }

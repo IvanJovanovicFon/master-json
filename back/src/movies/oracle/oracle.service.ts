@@ -7,7 +7,6 @@ import {performance} from 'perf_hooks';
 
 @Injectable()
 export class OracleService {
-    private cachedMovieData: { id: number; data: string } | null = null;
 
     constructor(
         @InjectDataSource('oracleConnection') private readonly dataSource: DataSource, // Correct connection name
@@ -27,20 +26,20 @@ export class OracleService {
                 `;
                 parameters = [JSON.stringify(movieData), jsonType];
                 message = 'Stored in Oracle as JSON';
-            } else if (jsonType === 'oracle_blob') {
+            } else if (jsonType === 'oracle_clob') {
                 query = `
                     INSERT INTO MOVIES (MOVIECLOB, JSONTYPE)
                     VALUES (:movieData, :jsonType)
                 `;
                 parameters = [JSON.stringify(movieData), jsonType];
-                message = 'Stored in Oracle as BLOB';
+                message = 'Stored in Oracle as CLOB';
             } else {
                 return {message: 'Invalid JSON type', data: null};
             }
 
             // Capture performance metrics before the query
             const startTime = performance.now();
-            const cpuStart = process.cpuUsage();               // CPU usage (in microseconds)
+            const cpuStart = process.cpuUsage();         // CPU usage (in microseconds)
             const memStart = process.memoryUsage().heapUsed;     // Memory usage in bytes
 
             // Execute the insert query
@@ -53,7 +52,7 @@ export class OracleService {
 
             // Calculate metrics
             const latency = endTime - startTime;                 // Latency in milliseconds
-            const cpuUsageTotal = cpuUsageDiff.user + cpuUsageDiff.system; // Total CPU usage (µs)
+            const cpuUsageTotal =  cpuUsageDiff.system;         // Total CPU usage (µs)
             const memUsageDiff = memEnd - memStart;              // Memory change in bytes
 
             // Log the results
@@ -74,53 +73,18 @@ export class OracleService {
         }
     }
 
-    async updateMovieData(id: number, movieData: any, jsonType: string): Promise<any> {
-        try {
-            if (jsonType === 'oracle_json') {
-                const query = `
-                    UPDATE MOVIES
-                    SET MOVIEJSON = :movieData
-                    WHERE ID = :id
-                `;
-                const parameters = [JSON.stringify(movieData), id];
-
-                await this.dataSource.manager.query(query, parameters);
-                return {message: 'Updated in ORACLE as JSON', data: movieData};
-
-            } else if (jsonType === 'oracle_blob') {
-                const query = `
-                    UPDATE MOVIES
-                    SET MOVIECLOB = :movieData
-                    WHERE ID = :id
-                `;
-                const parameters = [JSON.stringify(movieData), id];
-
-                await this.dataSource.manager.query(query, parameters);
-                return {message: 'Updated in ORACLE as BLOB', data: movieData};
-            }
-
-            return {message: 'Invalid JSON type', data: null};
-        } catch (error) {
-            console.log('Error updating movie data:', error);
-            throw error;
-        }
-    }
-
     async readData(movieId: number): Promise<any> {
         try {
-            // Start overall performance measurement
-            const overallStart = performance.now();
-            const cpuStart = process.cpuUsage();
-            const memStart = process.memoryUsage().heapUsed;
 
-            // --- Query Execution Measurement ---
-            const queryStart = performance.now();
             const query = `
                 SELECT MOVIEJSON, MOVIECLOB, JSONTYPE
                 FROM MOVIES
                 WHERE ID = :movieId
             `;
             const parameters = [movieId];
+            const cpuStart = process.cpuUsage();
+            const memStart = process.memoryUsage().heapUsed;
+            const queryStart = performance.now();
             const result = await this.dataSource.manager.query(query, parameters);
             const queryEnd = performance.now();
             const queryLatency = queryEnd - queryStart;
@@ -137,7 +101,6 @@ export class OracleService {
                     const parsingStart = performance.now();
                     try {
                         // If the JSON is stored directly in the column, no parsing may be needed.
-                        this.cachedMovieData = {id: movieId, data: movieData.MOVIEJSON};
                         response.message = 'Movie data retrieved as JSON';
                         response.data = movieData.MOVIEJSON;
                     } catch (error) {
@@ -151,7 +114,6 @@ export class OracleService {
                     try {
                         const jsonString = movieData.MOVIECLOB.toString();
                         const parsedJson = JSON.parse(jsonString);
-                        this.cachedMovieData = {id: movieId, data: movieData.MOVIECLOB};
                         response.message = 'Movie data retrieved from CLOB as JSON';
                         response.data = parsedJson;
                     } catch (error) {
@@ -167,18 +129,15 @@ export class OracleService {
                 response = {message: 'No movie data found', data: null, jsonType: null};
             }
 
-            // --- Overall Metrics ---
-            const overallEnd = performance.now();
-            const overallLatency = overallEnd - overallStart;
+
             const cpuUsageDiff = process.cpuUsage(cpuStart); // { user, system } in microseconds
-            const cpuUsageTotal = cpuUsageDiff.user + cpuUsageDiff.system;
+            const cpuUsageTotal =cpuUsageDiff.system;
             const memEnd = process.memoryUsage().heapUsed;
             const memUsageDiff = memEnd - memStart;
 
             // Log the metrics
             console.log(`Query latency: ${queryLatency.toFixed(5)} ms`);
             console.log(`JSON parsing latency: ${jsonParsingTime.toFixed(5)} ms`);
-            console.log(`Overall read latency: ${overallLatency.toFixed(5)} ms`);
             console.log(`CPU usage: ${cpuUsageTotal} µs`);
             console.log(`Memory change: ${memUsageDiff} bytes`);
 
@@ -186,7 +145,6 @@ export class OracleService {
             response.metrics = {
                 queryLatency,
                 jsonParsingTime,
-                overallLatency,
                 cpuUsage: cpuUsageTotal,
                 memoryUsage: memUsageDiff,
             };
@@ -198,41 +156,105 @@ export class OracleService {
         }
     }
 
-    async  findAllByType(jsonType: string) {
+    async updateMovieData(id: number, movieData: any, jsonType: string): Promise<any> {
         try {
-            // Overall start time and resource measurements
-            const overallStart = performance.now();
-            const cpuStart = process.cpuUsage();
-            const memStart = process.memoryUsage().heapUsed;
 
-            // Determine the appropriate query based on jsonType
+
+            // Prepare the query, parameters, and message based on the jsonType
+            let query: string;
+            let parameters: any[];
+            let message: string;
+
+            if (jsonType === 'oracle_json') {
+                query = `
+                    UPDATE MOVIES
+                    SET MOVIEJSON = JSON :movieData
+                    WHERE ID = :id
+                `;
+                parameters = [JSON.stringify(movieData), id];
+                message = 'Updated in ORACLE as JSON';
+            } else if (jsonType === 'oracle_clob') {
+                query = `
+                    UPDATE MOVIES
+                    SET MOVIECLOB = :movieData
+                    WHERE ID = :id
+                `;
+                parameters = [JSON.stringify(movieData), id];
+                message = 'Updated in ORACLE as CLOB';
+            } else {
+                return {message: 'Invalid JSON type', data: null};
+            }
+
+            // --- Measure Query Execution Latency ---
+            const cpuStart = process.cpuUsage();           // Snapshot of CPU time in microseconds
+            const memStart = process.memoryUsage().heapUsed; // Snapshot of heap memory (in bytes)
+            const queryStart = performance.now();
+            await this.dataSource.manager.query(query, parameters);
+            const queryEnd = performance.now();
+            const queryLatency = queryEnd - queryStart; // Query execution time in milliseconds
+
+                      // --- Calculate CPU and Memory Usage ---
+            const cpuUsageDiff = process.cpuUsage(cpuStart);
+            const cpuUsageTotal = cpuUsageDiff.system; // Total CPU time (µs)
+            const memEnd = process.memoryUsage().heapUsed;
+            const memUsageDiff = memEnd - memStart; // Change in memory usage (bytes)
+
+            // Log the metrics (for debugging or analysis)
+            console.log(`Update query latency: ${queryLatency.toFixed(5)} ms`);
+            console.log(`CPU usage: ${cpuUsageTotal} µs`);
+            console.log(`Memory usage change: ${memUsageDiff} bytes`);
+
+            return {
+                message,
+                data: movieData,
+                metrics: {
+                    queryLatency,       // Time taken by the update query itself (ms)
+                    cpuUsage: cpuUsageTotal,   // CPU time consumed during the operation (µs)
+                    memoryUsage: memUsageDiff  // Change in heap memory (bytes)
+                }
+            };
+        } catch (error) {
+            console.log('Error updating movie data:', error);
+            throw error;
+        }
+    }
+
+    async findAllByType(jsonType: string) {
+        try {
             let query: string;
             if (jsonType === 'oracle_json') {
                 query = `
-        SELECT MOVIEJSON
-        FROM MOVIES
-        WHERE MOVIEJSON IS NOT NULL
-      `;
-            } else if (jsonType === 'oracle_blob') {
+                    SELECT MOVIEJSON
+                    FROM MOVIES
+                    WHERE MOVIEJSON IS NOT NULL
+                `;
+            } else if (jsonType === 'oracle_clob') {
                 query = `
-        SELECT MOVIECLOB
-        FROM MOVIES
-        WHERE MOVIECLOB IS NOT NULL
-      `;
+                    SELECT MOVIECLOB
+                    FROM MOVIES
+                    WHERE MOVIECLOB IS NOT NULL
+                `;
             } else {
-                return { message: 'Invalid JSON type', data: null };
+                return {message: 'Invalid JSON type', data: null};
             }
 
             // Measure query execution time
+            const memStart = process.memoryUsage().heapUsed;
+            const cpuStart = process.cpuUsage();
             const queryStart = performance.now();
             const result: any[] = await this.dataSource.manager.query(query);
             const queryEnd = performance.now();
             const queryLatency = queryEnd - queryStart;
 
-            // Process results and measure JSON parsing time (if needed)
+
+            const cpuUsageDiff = process.cpuUsage(cpuStart); // in microseconds
+            const cpuUsageTotal =  cpuUsageDiff.system;
+            const memEnd = process.memoryUsage().heapUsed;
+            const memUsageDiff = memEnd - memStart;
+
             let totalJsonParsingTime = 0;
             const processedData = result.map((row) => {
-                if (jsonType === 'oracle_blob') {
+                if (jsonType === 'oracle_clob') {
                     const parseStart = performance.now();
                     let parsedData;
                     try {
@@ -243,24 +265,17 @@ export class OracleService {
                     }
                     const parseEnd = performance.now();
                     totalJsonParsingTime += (parseEnd - parseStart);
-                    return { data: parsedData };
+                    return {data: parsedData};
                 }
-                // For 'oracle_json', we assume the JSON is already in a usable form.
-                return { data: row.MOVIEJSON };
+                return {data: row.MOVIEJSON};
             });
 
-            // Capture overall resource measurements after processing
-            const overallEnd = performance.now();
-            const overallLatency = overallEnd - overallStart;
-            const cpuUsageDiff = process.cpuUsage(cpuStart); // in microseconds
-            const cpuUsageTotal = cpuUsageDiff.user + cpuUsageDiff.system;
-            const memEnd = process.memoryUsage().heapUsed;
-            const memUsageDiff = memEnd - memStart;
+
 
             // Log the performance metrics
             console.log(`Query latency: ${queryLatency.toFixed(5)} ms`);
             console.log(`Total JSON parsing latency: ${totalJsonParsingTime.toFixed(5)} ms`);
-            console.log(`Overall operation latency: ${overallLatency.toFixed(5)} ms`);
+
             console.log(`CPU usage: ${cpuUsageTotal} µs`);
             console.log(`Memory change: ${memUsageDiff} bytes`);
 
@@ -271,7 +286,7 @@ export class OracleService {
                 metrics: {
                     queryLatency,           // Time to execute the query
                     jsonParsingTime: totalJsonParsingTime,  // Total time to parse JSON data (for BLOBs)
-                    overallLatency,         // Total time for the entire operation
+
                     cpuUsage: cpuUsageTotal,  // CPU time used in microseconds
                     memoryUsage: memUsageDiff // Change in heap memory in bytes
                 }
@@ -281,6 +296,69 @@ export class OracleService {
             throw new Error('Failed to retrieve movie data from the database.');
         }
     }
+
+    async updatePartOfMovie(
+        id: number,
+        newMovieData: any,
+        jsonType: string
+    ): Promise<any> {
+        try {
+
+            let query: string;
+            if (jsonType === 'oracle_json') {
+                query = `
+                    UPDATE MOVIES
+                    SET MOVIEJSON = JSON_MERGEPATCH(MOVIEJSON, :newMovieData)
+                    WHERE ID = :id
+                `;
+            } else if (jsonType === 'oracle_clob') {
+                query = `
+                    UPDATE MOVIES
+                    SET MOVIECLOB = JSON_MERGEPATCH(MOVIEBLOB, :newMovieData)
+                    WHERE ID = :id
+                `;
+            } else {
+                return { message: 'Invalid JSON type', data: null };
+            }
+
+            const parameters = [JSON.stringify(newMovieData), id];
+
+            const cpuStart = process.cpuUsage();           // CPU snapshot in microseconds
+            const memStart = process.memoryUsage().heapUsed; // Heap memory snapshot in bytes
+
+            // --- Measure Query Execution Latency ---
+            const queryStart = performance.now();
+            await this.dataSource.manager.query(query, parameters);
+            const queryEnd = performance.now();
+            const queryLatency = queryEnd - queryStart; // in milliseconds
+
+            // --- Capture CPU and Memory Usage ---
+            const cpuUsageDiff = process.cpuUsage(cpuStart);
+            const cpuUsageTotal = cpuUsageDiff.user + cpuUsageDiff.system; // in microseconds
+            const memEnd = process.memoryUsage().heapUsed;
+            const memUsageDiff = memEnd - memStart; // in bytes
+
+            // Log the metrics
+            console.log(`Update partial query latency: ${queryLatency.toFixed(5)} ms`);
+            console.log(`CPU usage: ${cpuUsageTotal} µs`);
+            console.log(`Memory usage change: ${memUsageDiff} bytes`);
+
+            // Return the response along with the performance metrics
+            return {
+                message: 'Updated successfully using JSON Merge Patch',
+                updatedFields: newMovieData,
+                metrics: {
+                    queryLatency,       // Time taken by the database to execute the update query (ms)
+                    cpuUsage: cpuUsageTotal,   // Total CPU time consumed during the operation (µs)
+                    memoryUsage: memUsageDiff  // Change in heap memory during the operation (bytes)
+                }
+            };
+        } catch (error) {
+            console.log('Error updating changed parts of movie:', error);
+            throw error;
+        }
+    }
+
     async deleteMovie(id: number) {
         try {
             let query: string;
@@ -298,70 +376,4 @@ export class OracleService {
             throw error;
         }
     }
-
-    async updatePartOfMovie(
-        id: number,
-        newMovieData: any,
-        jsonType: string
-    ): Promise<any> {
-        try {
-            console.log(this.cachedMovieData)
-            const cachedData = this.cachedMovieData?.id === id ? this.cachedMovieData.data : null;
-
-            if (!cachedData) {
-                return {message: 'No cached data available for comparison', data: null};
-            }
-
-            const patchDocument = this.generateJsonMergePatch(cachedData, newMovieData);
-
-            if (!patchDocument || Object.keys(patchDocument).length === 0) {
-                return {message: 'No changes detected', data: null};
-            }
-
-            let query: string;
-            if (jsonType === 'oracle_json') {
-                query = `
-                    UPDATE MOVIES
-                    SET MOVIEJSON = JSON_MERGEPATCH(MOVIEJSON, :patchDocument)
-                    WHERE ID = :id
-                `;
-            } else if (jsonType === 'oracle_blob') {
-                query = `
-                    UPDATE MOVIES
-                    SET MOVIECLOB = JSON_MERGEPATCH(MOVIECLOB, :patchDocument)
-                    WHERE ID = :id
-                `;
-            } else {
-                return {message: 'Invalid JSON type', data: null};
-            }
-
-            const parameters = [JSON.stringify(patchDocument), id];
-            await this.dataSource.manager.query(query, parameters);
-
-            return {
-                message: 'Updated successfully using JSON Merge Patch',
-                updatedFields: patchDocument,
-            };
-        } catch (error) {
-            console.log('Error updating changed parts of movie:', error);
-            throw error;
-        }
-    }
-
-    private generateJsonMergePatch(cachedData: any, newData: any): any {
-        const patch: any = {};
-
-        for (const key in newData) {
-            if (newData[key] === null && key in cachedData) {
-                patch[key] = null;
-            } else if (JSON.stringify(newData[key]) !== JSON.stringify(cachedData[key])) {
-                patch[key] = newData[key];
-                console.log(patch[key])
-            }
-        }
-
-        return patch;
-    }
-
-
 }

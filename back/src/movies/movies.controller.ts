@@ -96,7 +96,7 @@ export class MoviesController {
 
         switch (jsonType) {
             case 'oracle_json':
-            case 'oracle_blob':
+            case 'oracle_clob':
                 return await this.oracleService.handleMovieData(jsonType, movie);
 
             case 'mssql_json':
@@ -122,7 +122,7 @@ export class MoviesController {
 
         switch (jsonType) {
             case 'oracle_json':
-            case 'oracle_blob':
+            case 'oracle_clob':
                 return await this.oracleService.findAllByType(jsonType);
 
             case 'mssql_json':

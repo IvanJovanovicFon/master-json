@@ -21,7 +21,7 @@ export class MoviesComponent {
   movie: Movie = new Movie();
   jsonTypes = [
     {label: 'Oracle JSON', value: 'oracle_json'},
-    {label: 'Oracle BLOB', value: 'oracle_blob'},
+    {label: 'Oracle CLOB', value: 'oracle_clob'},
     {label: 'MSSQL VARCHAR', value: 'mssql_varchar'},
     {label: 'Postgres JSON', value: 'postgres_json'},
     {label: 'Postgres JSONB', value: 'postgres_jsonb'},
