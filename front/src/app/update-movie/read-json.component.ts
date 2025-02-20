@@ -39,6 +39,7 @@ export class ReadJsonComponent {
       next: (response: any) => {
         this.jsonType= response.jsonType;
         this.movie = response.data;
+        this.movie.actor = JSON.parse(response.data.actor)
       },
       error: (error) => {
         console.error('Error loading movie:', error);

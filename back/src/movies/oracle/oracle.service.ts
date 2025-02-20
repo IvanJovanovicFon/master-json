@@ -42,20 +42,16 @@ export class OracleService {
             const cpuStart = process.cpuUsage();         // CPU usage (in microseconds)
             const memStart = process.memoryUsage().heapUsed;     // Memory usage in bytes
 
-            // Execute the insert query
             await this.dataSource.manager.query(query, parameters);
 
-            // Capture performance metrics after the query
             const endTime = performance.now();
             const cpuUsageDiff = process.cpuUsage(cpuStart);     // Difference in CPU usage
             const memEnd = process.memoryUsage().heapUsed;
 
-            // Calculate metrics
             const latency = endTime - startTime;                 // Latency in milliseconds
             const cpuUsageTotal =  cpuUsageDiff.system;         // Total CPU usage (µs)
-            const memUsageDiff = memEnd - memStart;              // Memory change in bytes
+            const memUsageDiff = memEnd - memStart;
 
-            // Log the results
             console.log(`Insert latency for ${jsonType}: ${latency.toFixed(5)} ms`);
             console.log(`CPU usage for ${jsonType}: ${cpuUsageTotal} µs`);
             console.log(`Memory change for ${jsonType}: ${memUsageDiff} bytes`);
@@ -155,7 +151,6 @@ export class OracleService {
             throw error;
         }
     }
-
     async updateMovieData(id: number, movieData: any, jsonType: string): Promise<any> {
         try {
 
@@ -218,7 +213,6 @@ export class OracleService {
             throw error;
         }
     }
-
     async findAllByType(jsonType: string) {
         try {
             let query: string;
@@ -325,25 +319,20 @@ export class OracleService {
 
             const cpuStart = process.cpuUsage();           // CPU snapshot in microseconds
             const memStart = process.memoryUsage().heapUsed; // Heap memory snapshot in bytes
-
-            // --- Measure Query Execution Latency ---
             const queryStart = performance.now();
             await this.dataSource.manager.query(query, parameters);
             const queryEnd = performance.now();
             const queryLatency = queryEnd - queryStart; // in milliseconds
 
-            // --- Capture CPU and Memory Usage ---
             const cpuUsageDiff = process.cpuUsage(cpuStart);
             const cpuUsageTotal = cpuUsageDiff.user + cpuUsageDiff.system; // in microseconds
             const memEnd = process.memoryUsage().heapUsed;
             const memUsageDiff = memEnd - memStart; // in bytes
 
-            // Log the metrics
             console.log(`Update partial query latency: ${queryLatency.toFixed(5)} ms`);
             console.log(`CPU usage: ${cpuUsageTotal} µs`);
             console.log(`Memory usage change: ${memUsageDiff} bytes`);
 
-            // Return the response along with the performance metrics
             return {
                 message: 'Updated successfully using JSON Merge Patch',
                 updatedFields: newMovieData,
@@ -375,5 +364,6 @@ export class OracleService {
             console.error('Error deleting movie:', error);
             throw error;
         }
+
     }
 }

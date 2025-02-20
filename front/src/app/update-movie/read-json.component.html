@@ -44,10 +44,6 @@
         <label for="directorLName">Last Name:</label>
         <input id="directorLName" [(ngModel)]="movie.director.l_name" name="directorLName"/>
       </div>
-      <div>
-        <label for="directorBYear">Birth Year:</label>
-        <input id="directorBYear" type="number" [(ngModel)]="movie.director.b_year" name="directorBYear"/>
-      </div>
 
       <h4>Actors</h4>
       <div *ngFor="let actor of movie.actor; let i = index">
